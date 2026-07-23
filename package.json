@@ -8,9 +8,11 @@
     "start": "next start",
     "db:new": "supabase migration new",
     "db:push": "supabase db push",
-    "db:status": "supabase migration list"
+    "db:status": "supabase migration list",
+    "db:seed": "node --env-file=.env.local scripts/seed-admin.mjs"
   },
   "dependencies": {
+    "@supabase/ssr": "^0.12.3",
     "@supabase/supabase-js": "^2.110.8",
     "next": "14.2.5",
     "react": "^18.3.1",

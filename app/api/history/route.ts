@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
+import { getSessionUser } from "@/lib/supabase-session";
 import type { HistoryDay, HistoryEntry } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -23,11 +24,18 @@ interface MealRow {
 export async function GET(req: Request) {
   try {
     const offset = Math.max(0, Number(new URL(req.url).searchParams.get("offset")) || 0);
+
+    const user = await getSessionUser();
+    if (!user) {
+      return NextResponse.json({ error: "未登录" }, { status: 401 });
+    }
+
     const supabase = getSupabaseAdmin();
 
     const { data, error } = await supabase
       .from("meals")
       .select("id, created_at, photo_url, food_items(name, kcal_low, kcal_high, position)")
+      .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .range(offset, offset + PAGE_SIZE); // 多取一条判断 hasMore
     if (error) throw new Error(`读取历史失败:${error.message}`);

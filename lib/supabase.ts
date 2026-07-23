@@ -5,10 +5,10 @@ import { createClient } from "@supabase/supabase-js";
  * 仅在 Route Handler 中使用,切勿 import 到客户端组件。
  */
 export function getSupabaseAdmin() {
-  const url = process.env.SUPABASE_URL;
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SECRET_KEY;
   if (!url || !key) {
-    throw new Error("缺少 SUPABASE_URL 或 SUPABASE_SECRET_KEY,请检查 .env.local");
+    throw new Error("缺少 NEXT_PUBLIC_SUPABASE_URL 或 SUPABASE_SECRET_KEY,请检查 .env.local");
   }
   return createClient(url, key, {
     auth: { persistSession: false, autoRefreshToken: false },

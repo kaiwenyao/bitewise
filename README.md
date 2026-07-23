@@ -17,12 +17,21 @@ cp .env.example .env.local   # 填入 Supabase / MiniMax 密钥
 pnpm supabase login          # 首次使用,见「数据库迁移」一节
 pnpm supabase link --project-ref <项目ref>
 pnpm db:push                 # 建表 + 建存储桶
+pnpm db:seed                 # 创建默认用户 admin / 123456
 pnpm dev
 ```
 
 ## 环境变量
 
 见 `.env.example`。`SUPABASE_SECRET_KEY` 和 `MINIMAX_API_KEY` 仅在服务端使用,不要加 `NEXT_PUBLIC_` 前缀。
+
+## 用户系统
+
+- 用 **Supabase Auth** 做用户名 + 密码登录:Auth 原生只支持邮箱,所以用户名映射为 `用户名@bitewise.local`(如 `admin` → `admin@bitewise.local`),映射逻辑在 `lib/supabase-browser.ts`
+- `middleware.ts` 保护所有页面和 `/api/*`:未登录访问页面跳 `/login`,访问 API 返回 401;已登录访问 `/login` 跳回 `/capture`
+- 数据按用户隔离:`meals.user_id` 记录归属,保存时取会话用户写入,历史页按 `user_id` 过滤(服务端用 sb_secret 查询,所以**必须**在代码里过滤,不能省)
+- 默认用户:`pnpm db:seed` 创建 `admin / 123456`(幂等)。**上线前务必改密码**——目前只能去 Supabase Dashboard → Authentication → Users 里改,或再建新用户
+- 新增用户:Dashboard → Authentication → Users → Add user,邮箱填 `新名字@bitewise.local`
 
 ---
 

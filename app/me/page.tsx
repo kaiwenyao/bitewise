@@ -1,14 +1,28 @@
 import { AppHeader } from "@/components/AppHeader";
 import { TabBar } from "@/components/TabBar";
+import { SignOutButton } from "@/components/SignOutButton";
+import { getSessionUser } from "@/lib/supabase-session";
+import { emailToUsername } from "@/lib/supabase-browser";
 
-const configActions = [
-  { no: "01", label: "健康数据同步", icon: "arrow_forward" },
-  { no: "02", label: "隐私协议", icon: "arrow_forward" },
-  { no: "03", label: "退出登录", icon: "logout", destructive: true },
-] as const;
+// 依赖登录会话,必须按请求渲染(否则构建期会把占位符静态化)
+export const dynamic = "force-dynamic";
 
-/** 个人页:用户数据、每日目标与系统设置 */
-export default function MePage() {
+/** 个人页:真实用户数据、每日目标与系统设置 */
+export default async function MePage() {
+  // 未配置 Supabase(纯前端开发)时显示占位
+  let username = "—";
+  let entry = "—";
+  try {
+    const user = await getSessionUser();
+    if (user?.email) {
+      username = emailToUsername(user.email).toUpperCase();
+      const at = new Date(user.created_at);
+      entry = `${at.getFullYear()}.${String(at.getMonth() + 1).padStart(2, "0")}`;
+    }
+  } catch {
+    /* env 未配置,保持占位 */
+  }
+
   return (
     <div className="flex min-h-dvh flex-col">
       <AppHeader />
@@ -33,17 +47,17 @@ export default function MePage() {
               </span>
             </div>
             <p className="mb-1 font-mono text-data uppercase text-ink-faint">
-              ID ALLOCATION
+              用户名
             </p>
             <h3 className="font-display text-headline-lg uppercase leading-none">
-              ID-8822
+              {username}
             </h3>
             <div className="my-4 h-[3px] w-full bg-black" />
             <p className="mb-1 font-mono text-data uppercase text-ink-faint">
               SYSTEM ENTRY
             </p>
             <p className="font-display text-headline-md uppercase leading-none">
-              2026.07
+              {entry}
             </p>
           </section>
 
@@ -86,32 +100,7 @@ export default function MePage() {
               SYSTEM CONFIG
             </h3>
           </div>
-          {configActions.map((action, index) => (
-            <button
-              key={action.no}
-              className={`group flex w-full items-center justify-between p-6 text-left transition-colors duration-fast ${
-                index < configActions.length - 1
-                  ? "border-b-[3px] border-black"
-                  : ""
-              } ${
-                "destructive" in action && action.destructive
-                  ? "hover:bg-terracotta hover:text-paper"
-                  : "hover:bg-black hover:text-paper"
-              }`}
-            >
-              <span className="flex items-center gap-4">
-                <span className="font-mono text-data opacity-50 transition-opacity group-hover:opacity-100">
-                  {action.no}
-                </span>
-                <span className="font-display text-headline-md uppercase">
-                  {action.label}
-                </span>
-              </span>
-              <span className="material-symbols-outlined transition-transform group-hover:translate-x-2">
-                {action.icon}
-              </span>
-            </button>
-          ))}
+          <SignOutButton />
         </section>
       </main>
 

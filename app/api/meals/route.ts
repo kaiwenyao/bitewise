@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin, uploadMealPhoto } from "@/lib/supabase";
+import { getSessionUser } from "@/lib/supabase-session";
 
 export const runtime = "nodejs";
 
@@ -24,6 +25,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "items 不能为空" }, { status: 400 });
     }
 
+    const user = await getSessionUser();
+    if (!user) {
+      return NextResponse.json({ error: "未登录" }, { status: 401 });
+    }
+
     let photoUrl: string | null = null;
     if (body.photoBase64) {
       photoUrl = await uploadMealPhoto(
@@ -35,7 +41,7 @@ export async function POST(req: Request) {
     const supabase = getSupabaseAdmin();
     const { data: meal, error: mealError } = await supabase
       .from("meals")
-      .insert({ photo_url: photoUrl })
+      .insert({ photo_url: photoUrl, user_id: user.id })
       .select("id")
       .single();
     if (mealError) throw new Error(`保存失败:${mealError.message}`);
