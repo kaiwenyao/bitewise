@@ -6,7 +6,8 @@ const DURATION = 550;
 
 /**
  * 数字平滑滚动到位(如识别完成后的合计热量)。
- * 从当前值过渡到目标值;系统开启「减少动态效果」时直接跳到目标值。
+ * active 时从当前值过渡到目标值;inactive 时直接显示目标值。
+ * 系统开启「减少动态效果」时直接跳到目标值。
  */
 export function useCountUp(target: number, active: boolean): number {
   const [value, setValue] = useState(0);
@@ -40,5 +41,5 @@ export function useCountUp(target: number, active: boolean): number {
     return () => cancelAnimationFrame(raf);
   }, [target, active]);
 
-  return active ? value : 0;
+  return active ? value : target;
 }

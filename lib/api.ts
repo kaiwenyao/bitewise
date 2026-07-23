@@ -64,3 +64,20 @@ export function fetchHistory(
 ): Promise<{ meals: HistoryEntry[]; hasMore: boolean }> {
   return request(`/api/history?offset=${offset}`);
 }
+
+/** 删除一条记录(连同照片) */
+export async function deleteMeal(id: string): Promise<void> {
+  await request<{ ok: boolean }>(`/api/meals/${id}`, { method: "DELETE" });
+}
+
+/** 修改一条记录的时间或食物明细 */
+export async function updateMeal(
+  id: string,
+  patch: { createdAt?: string | null; items?: FoodItem[] }
+): Promise<void> {
+  await request<{ ok: boolean }>(`/api/meals/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(patch),
+  });
+}
