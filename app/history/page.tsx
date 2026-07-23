@@ -1,41 +1,40 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { AppHeader } from "@/components/AppHeader";
 import { TabBar } from "@/components/TabBar";
 import { PlateIcon } from "@/components/icons";
 import { fetchHistory } from "@/lib/api";
-import type { HistoryDay } from "@/lib/types";
+import { dayLabel, timeLabel } from "@/lib/format";
+import type { HistoryDay, HistoryEntry } from "@/lib/types";
 
 type Status = "loading" | "ready" | "error";
+
+/** 按用户本地时区的「天」分组,组内保持时间倒序 */
+function groupByDay(meals: HistoryEntry[]): HistoryDay[] {
+  const map = new Map<string, HistoryEntry[]>();
+  for (const meal of meals) {
+    const label = dayLabel(new Date(meal.createdAt));
+    map.set(label, [...(map.get(label) ?? []), meal]);
+  }
+  return [...map.entries()].map(([label, entries]) => ({ label, entries }));
+}
 
 /** 历史页:按天分组的真实记录,底部加载更多 */
 export default function HistoryPage() {
   const [status, setStatus] = useState<Status>("loading");
   const [error, setError] = useState("");
-  const [days, setDays] = useState<HistoryDay[]>([]);
+  const [meals, setMeals] = useState<HistoryEntry[]>([]);
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
-  /** 已拉取的餐数,作为下一页的 offset */
-  const [loaded, setLoaded] = useState(0);
 
-  const merge = (prev: HistoryDay[], next: HistoryDay[]): HistoryDay[] => {
-    // 跨页边界同一天可能拆开,合并到已有分组
-    const map = new Map(prev.map((d) => [d.label, [...d.entries]]));
-    for (const day of next) {
-      map.set(day.label, [...(map.get(day.label) ?? []), ...day.entries]);
-    }
-    return [...map.entries()].map(([label, entries]) => ({ label, entries }));
-  };
-
-  const countEntries = (list: HistoryDay[]) =>
-    list.reduce((sum, d) => sum + d.entries.length, 0);
+  // 分组依赖浏览器时区,客户端计算
+  const days = useMemo(() => groupByDay(meals), [meals]);
 
   const load = useCallback(async (offset: number, append: boolean) => {
     const data = await fetchHistory(offset);
-    setDays((prev) => (append ? merge(prev, data.days) : data.days));
-    setLoaded((prev) => (append ? prev : 0) + countEntries(data.days));
+    setMeals((prev) => (append ? [...prev, ...data.meals] : data.meals));
     setHasMore(data.hasMore);
   }, []);
 
@@ -52,7 +51,7 @@ export default function HistoryPage() {
     if (loadingMore || !hasMore) return;
     setLoadingMore(true);
     try {
-      await load(loaded, true);
+      await load(meals.length, true);
     } finally {
       setLoadingMore(false);
     }
@@ -131,7 +130,7 @@ export default function HistoryPage() {
                           <img
                             src={entry.photoUrl}
                             alt={entry.name}
-                            className="h-full w-full object-cover grayscale contrast-125"
+                            className="h-full w-full object-cover"
                           />
                         ) : (
                           <PlateIcon width={40} height={40} strokeWidth={1.2} />
@@ -143,7 +142,7 @@ export default function HistoryPage() {
                             {entry.name}
                           </h3>
                           <span className="shrink-0 border border-black bg-paper px-2 py-1 font-mono text-data group-hover:border-paper group-hover:text-black">
-                            {entry.time}
+                            {timeLabel(new Date(entry.createdAt))}
                           </span>
                         </div>
                         <div className="mt-4 flex items-end justify-between">

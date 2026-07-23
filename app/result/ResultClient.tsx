@@ -10,7 +10,7 @@ import {
   type PendingMeal,
   type RecognizeResult,
 } from "@/lib/api";
-import { sumMeal } from "@/lib/format";
+import { sumMeal, toDateTimeInputValue } from "@/lib/format";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { FoodRow } from "@/components/FoodRow";
 import { TotalCard } from "@/components/TotalCard";
@@ -31,6 +31,8 @@ export function ResultClient() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  /** 记录时间(datetime-local 值),默认现在,可手动改 */
+  const [when, setWhen] = useState("");
 
   const toMeal = (result: RecognizeResult): MealRecord => ({
     id: crypto.randomUUID(),
@@ -41,6 +43,7 @@ export function ResultClient() {
 
   // 首次进入:取拍照页识别好的结果
   useEffect(() => {
+    setWhen(toDateTimeInputValue(new Date()));
     const raw = sessionStorage.getItem(PENDING_MEAL_KEY);
     if (!raw) {
       setStatus("empty");
@@ -111,10 +114,15 @@ export function ResultClient() {
     if (!meal || saving || saved) return;
     setSaving(true);
     try {
+      const whenDate = when ? new Date(when) : null;
       await saveMeal({
         photoBase64: photo?.base64 ?? null,
         mimeType: photo?.mimeType ?? "image/jpeg",
         items: meal.items,
+        createdAt:
+          whenDate && !Number.isNaN(whenDate.getTime())
+            ? whenDate.toISOString()
+            : null,
       });
       sessionStorage.removeItem(PENDING_MEAL_KEY);
       setSaved(true);
@@ -159,6 +167,27 @@ export function ResultClient() {
 
             <div className="mt-6">
               <TotalCard total={total} animate />
+            </div>
+
+            {/* 记录时间:默认现在,补记可改 */}
+            <div className="mt-6">
+              <label
+                htmlFor="meal-time"
+                className="font-mono text-label uppercase text-ink-muted"
+              >
+                记录时间(默认现在)
+              </label>
+              <input
+                id="meal-time"
+                type="datetime-local"
+                value={when}
+                max={toDateTimeInputValue(new Date())}
+                onChange={(e) => {
+                  setWhen(e.target.value);
+                  setSaved(false);
+                }}
+                className="mt-2 h-12 w-full border-[3px] border-black bg-paper px-4 font-mono text-data outline-none focus:bg-black focus:text-paper"
+              />
             </div>
 
             {error && (
@@ -220,7 +249,7 @@ function PhotoBlock({
         <img
           src={src}
           alt="这一餐的照片"
-          className="h-full w-full object-cover grayscale contrast-125"
+          className="h-full w-full object-cover"
         />
       ) : (
         <div className="flex h-full items-center justify-center text-paper/40">

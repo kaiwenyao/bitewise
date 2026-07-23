@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { getSessionUser } from "@/lib/supabase-session";
-import type { HistoryDay, HistoryEntry } from "@/lib/types";
+import type { HistoryEntry } from "@/lib/types";
 
 export const runtime = "nodejs";
 
 const PAGE_SIZE = 20;
-const WEEKDAYS = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"] as const;
 
 interface MealRow {
   id: string;
@@ -20,7 +19,10 @@ interface MealRow {
   }[];
 }
 
-/** GET /api/history?offset=0 — 按天分组的历史记录 */
+/**
+ * GET /api/history?offset=0 — 当前用户的历史记录(平铺,按时间倒序)。
+ * 只返回原始 ISO 时间(UTC);按天分组与格式化由浏览器按用户本地时区完成。
+ */
 export async function GET(req: Request) {
   try {
     const offset = Math.max(0, Number(new URL(req.url).searchParams.get("offset")) || 0);
@@ -42,32 +44,25 @@ export async function GET(req: Request) {
 
     const rows = (data ?? []) as MealRow[];
     const hasMore = rows.length > PAGE_SIZE;
-    const page = rows.slice(0, PAGE_SIZE);
 
-    const days = new Map<string, HistoryEntry[]>();
-    for (const meal of page) {
-      const at = new Date(meal.created_at);
-      const dayKey = `${String(at.getMonth() + 1).padStart(2, "0")}.${String(at.getDate()).padStart(2, "0")} ${WEEKDAYS[at.getDay()]}`;
+    const meals: HistoryEntry[] = rows.slice(0, PAGE_SIZE).map((meal) => {
       const items = [...meal.food_items].sort((a, b) => a.position - b.position);
-      if (items.length === 0) continue;
-      const entry: HistoryEntry = {
+      return {
         id: meal.id,
-        name: items.length > 1 ? `${items[0].name} 等 ${items.length} 项` : items[0].name,
-        time: `${String(at.getHours()).padStart(2, "0")}:${String(at.getMinutes()).padStart(2, "0")}`,
+        name:
+          items.length > 1
+            ? `${items[0].name} 等 ${items.length} 项`
+            : items[0]?.name ?? "未命名",
+        createdAt: meal.created_at,
         kcal: {
           low: items.reduce((s, i) => s + i.kcal_low, 0),
           high: items.reduce((s, i) => s + i.kcal_high, 0),
         },
         photoUrl: meal.photo_url,
       };
-      days.set(dayKey, [...(days.get(dayKey) ?? []), entry]);
-    }
+    });
 
-    const result: HistoryDay[] = [...days.entries()].map(([label, entries]) => ({
-      label,
-      entries,
-    }));
-    return NextResponse.json({ days: result, hasMore });
+    return NextResponse.json({ meals, hasMore });
   } catch (e) {
     const message = e instanceof Error ? e.message : "读取历史失败";
     return NextResponse.json({ error: message }, { status: 500 });

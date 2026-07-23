@@ -94,7 +94,7 @@ export default function MealDetailPage() {
                 <img
                   src={meal.photoUrl}
                   alt="这一餐的照片"
-                  className="h-full w-full object-cover grayscale contrast-125"
+                  className="h-full w-full object-cover"
                 />
               ) : (
                 <div className="flex h-full items-center justify-center text-paper/40">

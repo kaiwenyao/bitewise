@@ -1,4 +1,4 @@
-import type { FoodItem, HistoryDay } from "./types";
+import type { FoodItem, HistoryEntry } from "./types";
 
 /**
  * 浏览器端数据访问层 —— 全部经由 Next.js Route Handler,
@@ -39,11 +39,12 @@ export function recognizePhoto(photo: {
   });
 }
 
-/** 保存一餐到数据库(照片同时上传 Storage) */
+/** 保存一餐到数据库(照片同时上传 Storage);createdAt 缺省为当前时间 */
 export async function saveMeal(meal: {
   photoBase64: string | null;
   mimeType: string;
   items: FoodItem[];
+  createdAt?: string | null;
 }): Promise<void> {
   await request<{ id: string }>("/api/meals", {
     method: "POST",
@@ -52,13 +53,14 @@ export async function saveMeal(meal: {
       photoBase64: meal.photoBase64,
       mimeType: meal.mimeType,
       items: meal.items,
+      createdAt: meal.createdAt ?? null,
     }),
   });
 }
 
-/** 分页拉取历史记录 */
+/** 分页拉取历史记录(平铺;按天分组在浏览器按本地时区完成) */
 export function fetchHistory(
   offset: number
-): Promise<{ days: HistoryDay[]; hasMore: boolean }> {
+): Promise<{ meals: HistoryEntry[]; hasMore: boolean }> {
   return request(`/api/history?offset=${offset}`);
 }

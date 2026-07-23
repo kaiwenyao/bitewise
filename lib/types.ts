@@ -27,14 +27,14 @@ export interface MealRecord {
 export interface HistoryEntry {
   id: string;
   name: string;
-  /** 24 小时制时间,如 08:30 */
-  time: string;
+  /** ISO 时间(UTC 存储);展示时由浏览器转本地 */
+  createdAt: string;
   kcal: { low: number; high: number };
   /** Supabase Storage 中的照片地址;未拍照的记录为 null */
   photoUrl: string | null;
 }
 
-/** 历史页按天分组 */
+/** 历史页按天分组(由浏览器按本地时区分组) */
 export interface HistoryDay {
   /** 分组标题,如 07.23 THU */
   label: string;

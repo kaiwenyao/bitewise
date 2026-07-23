@@ -20,6 +20,7 @@ export async function POST(req: Request) {
       photoBase64?: string | null;
       mimeType?: string;
       items?: SaveItem[];
+      createdAt?: string | null;
     };
     if (!Array.isArray(body.items) || body.items.length === 0) {
       return NextResponse.json({ error: "items 不能为空" }, { status: 400 });
@@ -28,6 +29,13 @@ export async function POST(req: Request) {
     const user = await getSessionUser();
     if (!user) {
       return NextResponse.json({ error: "未登录" }, { status: 401 });
+    }
+
+    // 记录时间:默认当前,允许用户补记过去的餐
+    let createdAt: string | null = null;
+    if (body.createdAt) {
+      const d = new Date(body.createdAt);
+      if (!Number.isNaN(d.getTime())) createdAt = d.toISOString();
     }
 
     let photoUrl: string | null = null;
@@ -41,7 +49,11 @@ export async function POST(req: Request) {
     const supabase = getSupabaseAdmin();
     const { data: meal, error: mealError } = await supabase
       .from("meals")
-      .insert({ photo_url: photoUrl, user_id: user.id })
+      .insert({
+        photo_url: photoUrl,
+        user_id: user.id,
+        ...(createdAt ? { created_at: createdAt } : {}),
+      })
       .select("id")
       .single();
     if (mealError) throw new Error(`保存失败:${mealError.message}`);
