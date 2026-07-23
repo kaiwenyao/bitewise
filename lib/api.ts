@@ -2,7 +2,7 @@ import type { FoodItem, HistoryDay } from "./types";
 
 /**
  * 浏览器端数据访问层 —— 全部经由 Next.js Route Handler,
- * Supabase service_role 与 MiniMax 密钥只存在于服务端。
+ * Supabase sb_secret 与 MiniMax 密钥只存在于服务端。
  */
 
 export interface RecognizeResult {

@@ -22,7 +22,7 @@ pnpm dev
 
 ## 环境变量
 
-见 `.env.example`。`SUPABASE_SERVICE_ROLE_KEY` 和 `MINIMAX_API_KEY` 仅在服务端使用,不要加 `NEXT_PUBLIC_` 前缀。
+见 `.env.example`。`SUPABASE_SECRET_KEY` 和 `MINIMAX_API_KEY` 仅在服务端使用,不要加 `NEXT_PUBLIC_` 前缀。
 
 ---
 
@@ -160,7 +160,7 @@ on conflict (id) do nothing;
 
 - **push 报版本不一致**:你改了已推送的旧迁移文件。把旧文件恢复原样,改动写成新的迁移文件再 push
 - **想在本地起一个完整 Supabase 做测试**:`pnpm supabase start`(需要 Docker),会给你一套本地数据库 + Storage,迁移用 `pnpm supabase db reset` 在本地重演。可选,不影响上面的云流程
-- **密钥安全**:数据库密码、access token、`service_role` 密钥都不进 git;`supabase/config.toml` 本身不含密钥,可以提交
+- **密钥安全**:数据库密码、access token、`sb_secret_` 密钥都不进 git;`supabase/config.toml` 本身不含密钥,可以提交
 
 ---
 
