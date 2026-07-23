@@ -1,8 +1,15 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import type { FoodItem, MealRecord } from "@/lib/types";
-import { recognizeMeal, saveMeal } from "@/lib/api";
+import {
+  PENDING_MEAL_KEY,
+  recognizePhoto,
+  saveMeal,
+  type PendingMeal,
+  type RecognizeResult,
+} from "@/lib/api";
 import { sumMeal } from "@/lib/format";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { FoodRow } from "@/components/FoodRow";
@@ -12,26 +19,74 @@ import { TabBar } from "@/components/TabBar";
 import { Button } from "@/components/ui/Button";
 import { CameraIcon, CheckIcon, PlateIcon } from "@/components/icons";
 
-type Status = "loading" | "ready" | "error";
+type Status = "loading" | "ready" | "error" | "empty";
 
 export function ResultClient() {
+  const router = useRouter();
   const [status, setStatus] = useState<Status>("loading");
+  const [error, setError] = useState("");
   const [meal, setMeal] = useState<MealRecord | null>(null);
+  /** 压缩后的照片(base64),识别为空时也保留,供重试与保存 */
+  const [photo, setPhoto] = useState<{ base64: string; mimeType: string } | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  const load = useCallback(() => {
-    setStatus("loading");
-    recognizeMeal()
-      .then((m) => {
-        setMeal(m);
-        setStatus("ready");
-      })
-      .catch(() => setStatus("error"));
+  const toMeal = (result: RecognizeResult): MealRecord => ({
+    id: crypto.randomUUID(),
+    date: new Date().toISOString().slice(0, 10),
+    photoUrl: null, // 照片未保存前没有 URL,展示用 photo 的 data URL
+    items: result.items.map((item) => ({ ...item, id: crypto.randomUUID() })),
+  });
+
+  // 首次进入:取拍照页识别好的结果
+  useEffect(() => {
+    const raw = sessionStorage.getItem(PENDING_MEAL_KEY);
+    if (!raw) {
+      setStatus("empty");
+      return;
+    }
+    try {
+      const pending = JSON.parse(raw) as PendingMeal;
+      setPhoto({ base64: pending.photoBase64, mimeType: pending.mimeType });
+      if (pending.items.length === 0) {
+        setError("这张照片没认出食物");
+        setStatus("error");
+        return;
+      }
+      setMeal(toMeal(pending));
+      setStatus("ready");
+    } catch {
+      sessionStorage.removeItem(PENDING_MEAL_KEY);
+      setStatus("empty");
+    }
   }, []);
 
-  useEffect(load, [load]);
+  // 对同一张照片重新识别
+  const retry = useCallback(async () => {
+    if (!photo) {
+      router.push("/capture");
+      return;
+    }
+    setStatus("loading");
+    setError("");
+    try {
+      const result = await recognizePhoto(photo);
+      if (result.items.length === 0) {
+        setMeal(null);
+        setError("这张照片没认出食物");
+        setStatus("error");
+        return;
+      }
+      setMeal(toMeal(result));
+      setSaved(false);
+      setStatus("ready");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "识别失败,请重试");
+      setStatus("error");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [photo, router]);
 
   const total = useMemo(
     () => (meal ? sumMeal(meal.items) : null),
@@ -55,21 +110,46 @@ export function ResultClient() {
   const handleSave = async () => {
     if (!meal || saving || saved) return;
     setSaving(true);
-    await saveMeal(meal);
-    setSaving(false);
-    setSaved(true);
+    try {
+      await saveMeal({
+        photoBase64: photo?.base64 ?? null,
+        mimeType: photo?.mimeType ?? "image/jpeg",
+        items: meal.items,
+      });
+      sessionStorage.removeItem(PENDING_MEAL_KEY);
+      setSaved(true);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "保存失败,请重试");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
     <div className="flex min-h-dvh flex-col">
-      <ScreenHeader title="识别结果" />
+      <ScreenHeader
+        title="识别结果"
+        onBack={() => router.push("/capture")}
+        onClose={() => router.push("/capture")}
+      />
 
       <main className="flex-1 px-6 pb-6 pt-4">
         {status === "loading" && <LoadingState />}
-        {status === "error" && <ErrorState onRetry={load} />}
+        {status === "empty" && <EmptyState onCapture={() => router.push("/capture")} />}
+        {status === "error" && (
+          <ErrorState
+            message={error}
+            onRetry={retry}
+            onCapture={() => router.push("/capture")}
+          />
+        )}
         {status === "ready" && meal && total && (
           <div className="animate-[rise-in_250ms_ease-out]">
-            <PhotoBlock count={meal.items.length} />
+            <PhotoBlock
+              src={photo ? `data:${photo.mimeType};base64,${photo.base64}` : null}
+              count={meal.items.length}
+              onRetake={() => router.push("/capture")}
+            />
 
             <ul className="mt-6 border-t-[3px] border-black">
               {meal.items.map((item) => (
@@ -80,6 +160,12 @@ export function ResultClient() {
             <div className="mt-6">
               <TotalCard total={total} animate />
             </div>
+
+            {error && (
+              <p className="mt-4 border-[3px] border-black bg-terracotta px-4 py-3 text-center font-mono text-data uppercase text-paper">
+                {error}
+              </p>
+            )}
           </div>
         )}
       </main>
@@ -118,18 +204,37 @@ export function ResultClient() {
 
 /* ---------- 照片区 ---------- */
 
-function PhotoBlock({ count }: { count: number }) {
+function PhotoBlock({
+  src,
+  count,
+  onRetake,
+}: {
+  src: string | null;
+  count: number;
+  onRetake: () => void;
+}) {
   return (
     <div className="relative aspect-[4/3] overflow-hidden border-[3px] border-black bg-black">
-      {/* mock 照片占位:接入 Supabase Storage 后换成 <Image src={photoUrl} /> */}
-      <div className="flex h-full items-center justify-center text-paper/40">
-        <PlateIcon width={64} height={64} strokeWidth={1.2} />
-      </div>
+      {src ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={src}
+          alt="这一餐的照片"
+          className="h-full w-full object-cover grayscale contrast-125"
+        />
+      ) : (
+        <div className="flex h-full items-center justify-center text-paper/40">
+          <PlateIcon width={64} height={64} strokeWidth={1.2} />
+        </div>
+      )}
 
       <span className="absolute left-3 top-3 border-[3px] border-paper bg-black px-3 py-1.5 font-mono text-label uppercase text-paper">
         已识别 {count} 项
       </span>
-      <button className="absolute right-3 top-3 flex h-11 items-center gap-1.5 border-[3px] border-paper bg-black px-4 font-mono text-label uppercase text-paper transition-colors duration-fast hover:bg-paper hover:text-black">
+      <button
+        onClick={onRetake}
+        className="absolute right-3 top-3 flex h-11 items-center gap-1.5 border-[3px] border-paper bg-black px-4 font-mono text-label uppercase text-paper transition-colors duration-fast hover:bg-paper hover:text-black"
+      >
         <CameraIcon width={18} height={18} />
         重拍
       </button>
@@ -161,23 +266,52 @@ function LoadingState() {
   );
 }
 
-/* ---------- 错误态:说清发生了什么,给出路 ---------- */
+/* ---------- 没有照片:引导去拍 ---------- */
 
-function ErrorState({ onRetry }: { onRetry: () => void }) {
+function EmptyState({ onCapture }: { onCapture: () => void }) {
   return (
     <div className="flex flex-col items-center pt-16 text-center">
       <div className="flex h-16 w-16 items-center justify-center border-[3px] border-black text-ink">
         <PlateIcon width={28} height={28} />
       </div>
       <h2 className="mt-5 font-display text-headline-md uppercase">
-        这张照片没认出食物
+        还没有照片
       </h2>
       <p className="mt-2 max-w-[260px] text-body-md text-ink-muted">
-        可能是光线太暗,或者角度有点刁钻。换一张清晰点的,或者手动记一笔。
+        先给这餐拍一张,AI 会帮你数出每种食物和热量。
+      </p>
+      <div className="mt-8 w-full">
+        <Button onClick={onCapture}>去拍照</Button>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- 错误态:说清发生了什么,给出路 ---------- */
+
+function ErrorState({
+  message,
+  onRetry,
+  onCapture,
+}: {
+  message: string;
+  onRetry: () => void;
+  onCapture: () => void;
+}) {
+  return (
+    <div className="flex flex-col items-center pt-16 text-center">
+      <div className="flex h-16 w-16 items-center justify-center border-[3px] border-black text-ink">
+        <PlateIcon width={28} height={28} />
+      </div>
+      <h2 className="mt-5 font-display text-headline-md uppercase">
+        {message || "这张照片没认出食物"}
+      </h2>
+      <p className="mt-2 max-w-[260px] text-body-md text-ink-muted">
+        可能是光线太暗,或者角度有点刁钻。换一张清晰点的试试。
       </p>
       <div className="mt-8 w-full space-y-3">
         <Button onClick={onRetry}>重试识别</Button>
-        <Button variant="ghost">手动添加</Button>
+        <Button variant="ghost" onClick={onCapture}>重新拍照</Button>
       </div>
     </div>
   );

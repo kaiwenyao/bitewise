@@ -18,7 +18,7 @@ export interface MealRecord {
   id: string;
   /** ISO 日期,如 2026-07-22 */
   date: string;
-  /** Supabase Storage 中的照片地址;mock 阶段为 null */
+  /** Supabase Storage 中的照片地址;未拍照的记录为 null */
   photoUrl: string | null;
   items: FoodItem[];
 }
@@ -30,7 +30,7 @@ export interface HistoryEntry {
   /** 24 小时制时间,如 08:30 */
   time: string;
   kcal: { low: number; high: number };
-  /** Supabase Storage 中的照片地址;mock 阶段为 null */
+  /** Supabase Storage 中的照片地址;未拍照的记录为 null */
   photoUrl: string | null;
 }
 
