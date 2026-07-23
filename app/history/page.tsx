@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { AppHeader } from "@/components/AppHeader";
 import { TabBar } from "@/components/TabBar";
 import { PlateIcon } from "@/components/icons";
@@ -115,8 +116,9 @@ export default function HistoryPage() {
                     </h2>
                   </div>
                   {day.entries.map((entry, entryIndex) => (
-                    <article
+                    <Link
                       key={entry.id}
+                      href={`/history/${entry.id}`}
                       className={`group flex cursor-pointer flex-col transition-colors duration-fast hover:bg-black hover:text-paper sm:flex-row ${
                         entryIndex < day.entries.length - 1
                           ? "border-b-[3px] border-black"
@@ -153,7 +155,7 @@ export default function HistoryPage() {
                           </span>
                         </div>
                       </div>
-                    </article>
+                    </Link>
                   ))}
                 </section>
               ))}

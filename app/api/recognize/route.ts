@@ -11,10 +11,17 @@ interface RecognizedItem {
   kcal: { low: number; mid: number; high: number };
 }
 
-const PROMPT = `你是食物营养估算助手。看这张照片,识别盘子里所有食物。
-对每种食物估计:名称(中文)、份量(克)、热量的诚实区间(low/mid/high,单位 kcal,不要伪精确)。
-只返回 JSON,不要输出任何其他文字,格式:{"items":[{"name":"烤鸡胸肉","portionGrams":150,"kcal":{"low":210,"mid":248,"high":285}}]}
-如果照片里认不出食物,返回 {"items":[]}`;
+const PROMPT = `你是食物营养估算助手。分析这张餐食照片,识别盘中可食用的主要食物。
+
+规则:
+- 只列出构成这餐的主要食物;忽略装饰物(点缀的香草、摆盘花、柠檬片等)、餐具、桌面、包装和背景物品
+- 不确定是不是食物、或看不清的,不要列
+- 同一种食物合并成一项,不要重复列出
+- 宁缺毋滥:少列比多列好,严禁编造
+
+对每种食物估计:名称(中文)、份量(克)、热量的诚实区间(low/mid/high,单位 kcal,满足 low <= mid <= high,不要伪精确)。
+只返回 JSON,不要输出任何其他文字:{"items":[{"name":"烤鸡胸肉","portionGrams":150,"kcal":{"low":210,"mid":248,"high":285}}]}
+照片里认不出食物时返回 {"items":[]}`;
 
 /**
  * POST /api/recognize — { image: base64, mimeType }
@@ -85,16 +92,29 @@ function parseItems(content: string): RecognizedItem[] {
     };
     if (!Array.isArray(parsed.items)) return [];
     return parsed.items
-      .filter((i) => i && typeof i.name === "string" && i.kcal)
-      .map((i) => ({
-        name: i.name,
-        portionGrams: Math.max(0, Math.round(Number(i.portionGrams) || 0)),
-        kcal: {
-          low: Math.max(0, Math.round(Number(i.kcal.low) || 0)),
-          mid: Math.max(0, Math.round(Number(i.kcal.mid) || 0)),
-          high: Math.max(0, Math.round(Number(i.kcal.high) || 0)),
-        },
-      }));
+      .filter(
+        (i) =>
+          i &&
+          typeof i.name === "string" &&
+          i.name.trim().length > 0 &&
+          i.name.length <= 30 &&
+          i.kcal
+      )
+      .slice(0, 12) // 兜底:防模型失控报出一长串
+      .map((i) => {
+        // 强制区间有序:low <= mid <= high
+        const nums = [i.kcal.low, i.kcal.mid, i.kcal.high].map((n) =>
+          Math.max(0, Math.round(Number(n) || 0))
+        );
+        const low = Math.min(...nums);
+        const high = Math.max(...nums);
+        const mid = Math.min(high, Math.max(low, nums[1]));
+        return {
+          name: i.name.trim(),
+          portionGrams: Math.max(0, Math.round(Number(i.portionGrams) || 0)),
+          kcal: { low, mid, high },
+        };
+      });
   } catch {
     return [];
   }
