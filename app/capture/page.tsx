@@ -186,9 +186,9 @@ export default function CapturePage() {
 
       {/* 状态条 */}
       <div className="flex flex-wrap items-center justify-between gap-2 border-b-[3px] border-black px-6 py-2">
-        <span className="flex min-w-0 items-center gap-2 font-mono text-data uppercase">
+        <span className="flex min-w-0 items-center gap-2 font-mono text-label uppercase">
           <span className="h-2 w-2 shrink-0 animate-pulse bg-black" />
-          ANALYSIS_MODE: {status === "working" ? "RUNNING" : "ACTIVE"}
+          MODE: {status === "working" ? "RUNNING" : "ACTIVE"}
         </span>
         <div
           className="flex shrink-0 border-[2px] border-black"
