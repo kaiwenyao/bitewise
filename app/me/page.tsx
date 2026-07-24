@@ -49,7 +49,7 @@ export default async function MePage() {
             <p className="mb-1 font-mono text-data uppercase text-ink-faint">
               用户名
             </p>
-            <h3 className="font-display text-headline-lg uppercase leading-none">
+            <h3 className="break-all font-display text-headline-lg uppercase leading-none">
               {username}
             </h3>
             <div className="my-4 h-[3px] w-full bg-black" />

@@ -138,7 +138,7 @@ export default function HistoryPage() {
                       </div>
                       <div className="flex flex-grow flex-col justify-between p-4">
                         <div className="mb-2 flex items-start justify-between gap-2">
-                          <h3 className="font-display text-headline-md uppercase leading-tight">
+                          <h3 className="min-w-0 flex-1 truncate font-display text-headline-md uppercase leading-tight">
                             {entry.name}
                           </h3>
                           <span className="shrink-0 border border-black bg-paper px-2 py-1 font-mono text-data group-hover:border-paper group-hover:text-black">

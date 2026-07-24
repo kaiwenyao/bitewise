@@ -28,7 +28,7 @@ export function TotalCard({ total, animate }: TotalCardProps) {
         {mid}
         <span className="font-body text-body-lg text-ink-muted"> kcal</span>
       </p>
-      <p className="mt-4 border-t-[3px] border-black pt-3 font-mono text-data uppercase text-ink-muted">
+      <p className="mt-4 break-words border-t-[3px] border-black pt-3 font-mono text-data uppercase text-ink-muted">
         区间 {low}–{high} kcal · 点任意食物可修正
       </p>
     </section>

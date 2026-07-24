@@ -154,13 +154,13 @@ export default function CapturePage() {
       <input ref={galleryInput} {...inputProps} />
 
       {/* 状态条 */}
-      <div className="flex items-center justify-between border-b-[3px] border-black px-6 py-2">
-        <span className="flex items-center gap-2 font-mono text-data uppercase">
-          <span className="h-2 w-2 animate-pulse bg-black" />
-          ANALYSIS_MODE: {status === "working" ? "RUNNING" : "ACTIVE"}
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b-[3px] border-black px-6 py-2">
+        <span className="flex min-w-0 items-center gap-2 font-mono text-label uppercase">
+          <span className="h-2 w-2 shrink-0 animate-pulse bg-black" />
+          MODE: {status === "working" ? "RUNNING" : "ACTIVE"}
         </span>
-        <span className="font-mono text-data uppercase">
-          LENS_01: {camState === "active" ? "LIVE" : "OFFLINE"}
+        <span className="min-w-0 font-mono text-label uppercase">
+          LENS: {camState === "active" ? "LIVE" : "OFFLINE"}
         </span>
       </div>
 

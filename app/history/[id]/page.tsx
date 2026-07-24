@@ -226,7 +226,7 @@ export default function MealDetailPage() {
             <button
               onClick={handleDelete}
               disabled={deleting}
-              className={`mt-6 flex h-14 w-full items-center justify-center border-[3px] border-black font-mono text-data uppercase transition-all duration-fast disabled:opacity-40 ${
+              className={`mt-6 flex min-h-14 w-full items-center justify-center border-[3px] border-black px-3 py-3 text-center font-mono text-data uppercase leading-tight transition-all duration-fast disabled:opacity-40 ${
                 confirming
                   ? "bg-terracotta text-paper shadow-hard hover:bg-black active:translate-x-[4px] active:translate-y-[4px] active:shadow-none"
                   : "bg-paper text-ink-muted hover:text-terracotta"
