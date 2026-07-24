@@ -11,9 +11,8 @@ import { FoodRow } from "@/components/FoodRow";
 import { EditSheet } from "@/components/EditSheet";
 import { DateTimeField } from "@/components/DateTimeField";
 import { TabBar } from "@/components/TabBar";
-import { Button } from "@/components/ui/Button";
 import { PhotoLightbox } from "@/components/PhotoLightbox";
-import { CheckIcon, PlateIcon } from "@/components/icons";
+import { PlateIcon } from "@/components/icons";
 
 interface MealDetail {
   id: string;
@@ -32,18 +31,15 @@ export default function MealDetailPage() {
   const [error, setError] = useState("");
   const [meal, setMeal] = useState<MealDetail | null>(null);
 
-  // 可编辑状态:时间与明细,改动后置 dirty
   const [items, setItems] = useState<FoodItem[]>([]);
   const [when, setWhen] = useState("");
-  const [dirty, setDirty] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
 
   /** 删除:第一段点击进入确认态,第二段真正执行 */
   const [confirming, setConfirming] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [deleteError, setDeleteError] = useState("");
+  const [actionError, setActionError] = useState("");
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
   useEffect(() => {
@@ -66,39 +62,44 @@ export default function MealDetailPage() {
   const total = useMemo(() => sumMeal(items), [items]);
   const editing = items.find((i) => i.id === editingId) ?? null;
 
-  const updateItem = (next: FoodItem) => {
-    setDirty(true);
-    setSaved(false);
-    setItems((list) => list.map((i) => (i.id === next.id ? next : i)));
-  };
-
-  const removeItem = (itemId: string) => {
-    if (items.length <= 1) return; // 至少保留一项;清空请用删除记录
-    setDirty(true);
-    setSaved(false);
-    setEditingId(null);
-    setItems((list) => list.filter((i) => i.id !== itemId));
-  };
-
-  const handleSave = async () => {
-    if (!meal || saving || !dirty) return;
-    const whenDate = when ? new Date(when) : null;
+  /** 立即落库当前明细与时间;完成/移除/改时间时调用 */
+  const persist = async (nextItems: FoodItem[], nextWhen: string) => {
+    if (!meal) return;
+    const whenDate = nextWhen ? new Date(nextWhen) : null;
     setSaving(true);
+    setActionError("");
     try {
       await updateMeal(meal.id, {
         createdAt:
           whenDate && !Number.isNaN(whenDate.getTime())
             ? whenDate.toISOString()
             : null,
-        items,
+        items: nextItems,
       });
-      setDirty(false);
-      setSaved(true);
     } catch (e) {
-      setDeleteError(e instanceof Error ? e.message : "保存失败,请重试");
+      setActionError(e instanceof Error ? e.message : "保存失败,请重试");
     } finally {
       setSaving(false);
     }
+  };
+
+  const updateItem = (next: FoodItem) => {
+    const nextItems = items.map((i) => (i.id === next.id ? next : i));
+    setItems(nextItems);
+    void persist(nextItems, when);
+  };
+
+  const removeItem = (itemId: string) => {
+    if (items.length <= 1) return; // 至少保留一项;清空请用删除记录
+    setEditingId(null);
+    const nextItems = items.filter((i) => i.id !== itemId);
+    setItems(nextItems);
+    void persist(nextItems, when);
+  };
+
+  const changeWhen = (nextWhen: string) => {
+    setWhen(nextWhen);
+    void persist(items, nextWhen);
   };
 
   const handleDelete = async () => {
@@ -108,12 +109,12 @@ export default function MealDetailPage() {
       return;
     }
     setDeleting(true);
-    setDeleteError("");
+    setActionError("");
     try {
       await deleteMeal(meal.id);
       router.push("/history");
     } catch (e) {
-      setDeleteError(e instanceof Error ? e.message : "删除失败,请重试");
+      setActionError(e instanceof Error ? e.message : "删除失败,请重试");
       setDeleting(false);
       setConfirming(false);
     }
@@ -190,16 +191,12 @@ export default function MealDetailPage() {
               </label>
               <DateTimeField
                 value={when}
-                onChange={(v) => {
-                  setWhen(v);
-                  setDirty(true);
-                  setSaved(false);
-                }}
+                onChange={changeWhen}
                 ariaLabel="记录时间"
               />
             </div>
 
-            {/* 明细:点行修改 */}
+            {/* 明细:点行修改,完成即落库 */}
             <ul className="mt-4 border-t-[3px] border-black">
               {items.map((item) => (
                 <FoodRow
@@ -214,27 +211,16 @@ export default function MealDetailPage() {
               <TotalCard total={total} animate={false} />
             </div>
 
-            {/* 保存修改:有改动时出现 */}
-            {dirty && (
-              <div className="mt-6">
-                <Button onClick={handleSave} disabled={saving}>
-                  {saving ? "保存中…" : "保存修改"}
-                </Button>
-              </div>
-            )}
-            {saved && !dirty && (
-              <div className="mt-6">
-                <Button variant="ghost" disabled>
-                  <CheckIcon width={20} height={20} />
-                  已保存修改
-                </Button>
-              </div>
+            {saving && (
+              <p className="mt-4 text-center font-mono text-label uppercase text-ink-faint">
+                保存中…
+              </p>
             )}
 
             {/* 删除:两段确认 */}
             <button
               onClick={handleDelete}
-              disabled={deleting}
+              disabled={deleting || saving}
               className={`mt-6 flex min-h-14 w-full items-center justify-center border-[3px] border-black px-3 py-3 text-center font-mono text-data uppercase leading-tight transition-all duration-fast disabled:opacity-40 ${
                 confirming
                   ? "bg-terracotta text-paper shadow-hard hover:bg-black active:translate-x-[4px] active:translate-y-[4px] active:shadow-none"
@@ -247,9 +233,9 @@ export default function MealDetailPage() {
                   ? "再点一次,确认删除(不可恢复)"
                   : "删除这条记录"}
             </button>
-            {deleteError && (
+            {actionError && (
               <p className="mt-3 border-[3px] border-black bg-terracotta px-4 py-3 text-center font-mono text-data uppercase text-paper">
-                {deleteError}
+                {actionError}
               </p>
             )}
           </div>
