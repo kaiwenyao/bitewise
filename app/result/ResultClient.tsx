@@ -17,6 +17,7 @@ import { TotalCard } from "@/components/TotalCard";
 import { EditSheet } from "@/components/EditSheet";
 import { TabBar } from "@/components/TabBar";
 import { BottomSheet } from "@/components/BottomSheet";
+import { DateTimeField } from "@/components/DateTimeField";
 import { Button } from "@/components/ui/Button";
 import { CameraIcon, CheckIcon, PlateIcon } from "@/components/icons";
 
@@ -219,13 +220,11 @@ export function ResultClient() {
               <p className="mb-5 font-mono text-label uppercase text-ink-muted">
                 MEAL_TIME // 这餐是什么时候吃的
               </p>
-              <input
-                type="datetime-local"
+              <DateTimeField
                 value={when}
-                max={toDateTimeInputValue(new Date())}
-                onChange={(e) => setWhen(e.target.value)}
-                aria-label="记录时间"
-                className="block h-12 w-full min-w-0 max-w-full border-[3px] border-black bg-paper px-3 font-mono text-data outline-none focus:bg-black focus:text-paper"
+                maxDate={toDateTimeInputValue(new Date()).slice(0, 10)}
+                onChange={setWhen}
+                ariaLabel="记录时间"
               />
               <p className="mt-2 font-mono text-label uppercase text-ink-faint">
                 默认当前时间,补记可改

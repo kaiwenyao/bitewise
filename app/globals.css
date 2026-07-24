@@ -22,12 +22,6 @@ body {
   touch-action: manipulation;
 }
 
-/* iOS 上 datetime-local 有固有最小宽度,强制可收缩防止溢出屏幕 */
-input[type="datetime-local"] {
-  min-width: 0;
-  max-width: 100%;
-}
-
 /* 尊重系统「减少动态效果」设置 */
 @media (prefers-reduced-motion: reduce) {
   *,

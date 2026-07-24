@@ -9,6 +9,7 @@ import { ScreenHeader } from "@/components/ScreenHeader";
 import { TotalCard } from "@/components/TotalCard";
 import { FoodRow } from "@/components/FoodRow";
 import { EditSheet } from "@/components/EditSheet";
+import { DateTimeField } from "@/components/DateTimeField";
 import { TabBar } from "@/components/TabBar";
 import { Button } from "@/components/ui/Button";
 import { CheckIcon, PlateIcon } from "@/components/icons";
@@ -178,16 +179,14 @@ export default function MealDetailPage() {
               >
                 记录时间
               </label>
-              <input
-                id="meal-time"
-                type="datetime-local"
+              <DateTimeField
                 value={when}
-                onChange={(e) => {
-                  setWhen(e.target.value);
+                onChange={(v) => {
+                  setWhen(v);
                   setDirty(true);
                   setSaved(false);
                 }}
-                className="mt-2 block h-12 w-full min-w-0 max-w-full border-[3px] border-black bg-paper px-3 font-mono text-data outline-none focus:bg-black focus:text-paper"
+                ariaLabel="记录时间"
               />
             </div>
 
