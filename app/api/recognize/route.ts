@@ -136,7 +136,19 @@ async function recognizeOpenAI(
     }),
   });
 
-  const data = await res.json().catch(() => null);
+  const raw = await res.text();
+  let data: {
+    error?: { message?: string };
+    choices?: { message?: { content?: string } }[];
+  } | null = null;
+  try {
+    data = JSON.parse(raw) as typeof data;
+  } catch {
+    // BASE_URL 少写 /v1 时网关常返回 200 HTML 页面
+    throw new Error(
+      `OpenAI 返回非 JSON(检查 OPENAI_BASE_URL 是否以 /v1 结尾)`
+    );
+  }
   if (!res.ok) {
     const detail =
       typeof data?.error?.message === "string" ? data.error.message : null;
@@ -144,7 +156,10 @@ async function recognizeOpenAI(
   }
 
   const content = data?.choices?.[0]?.message?.content;
-  return parseItems(typeof content === "string" ? content : "");
+  if (typeof content !== "string") {
+    throw new Error("OpenAI 未返回识别内容");
+  }
+  return parseItems(content);
 }
 
 /** 模型可能带寒暄或代码围栏,宽松提取 JSON;坏数据宁可丢弃 */
