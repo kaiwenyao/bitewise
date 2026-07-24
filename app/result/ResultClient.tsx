@@ -225,7 +225,7 @@ export function ResultClient() {
                 max={toDateTimeInputValue(new Date())}
                 onChange={(e) => setWhen(e.target.value)}
                 aria-label="记录时间"
-                className="h-12 w-full border-[3px] border-black bg-paper px-4 font-mono text-data outline-none focus:bg-black focus:text-paper"
+                className="block h-12 w-full min-w-0 max-w-full border-[3px] border-black bg-paper px-3 font-mono text-data outline-none focus:bg-black focus:text-paper"
               />
               <p className="mt-2 font-mono text-label uppercase text-ink-faint">
                 默认当前时间,补记可改

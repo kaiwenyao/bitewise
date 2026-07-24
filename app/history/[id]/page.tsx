@@ -187,7 +187,7 @@ export default function MealDetailPage() {
                   setDirty(true);
                   setSaved(false);
                 }}
-                className="mt-2 h-12 w-full border-[3px] border-black bg-paper px-4 font-mono text-data outline-none focus:bg-black focus:text-paper"
+                className="mt-2 block h-12 w-full min-w-0 max-w-full border-[3px] border-black bg-paper px-3 font-mono text-data outline-none focus:bg-black focus:text-paper"
               />
             </div>
 
