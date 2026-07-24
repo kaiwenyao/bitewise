@@ -12,6 +12,7 @@ import { EditSheet } from "@/components/EditSheet";
 import { DateTimeField } from "@/components/DateTimeField";
 import { TabBar } from "@/components/TabBar";
 import { Button } from "@/components/ui/Button";
+import { PhotoLightbox } from "@/components/PhotoLightbox";
 import { CheckIcon, PlateIcon } from "@/components/icons";
 
 interface MealDetail {
@@ -43,6 +44,7 @@ export default function MealDetailPage() {
   const [confirming, setConfirming] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
+  const [lightboxOpen, setLightboxOpen] = useState(false);
 
   useEffect(() => {
     fetch(`/api/meals/${id}`)
@@ -155,18 +157,25 @@ export default function MealDetailPage() {
           <div className="animate-[rise-in_250ms_ease-out]">
             <div className="relative aspect-[4/3] overflow-hidden border-[3px] border-black bg-black">
               {meal.photoUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={meal.photoUrl}
-                  alt="这一餐的照片"
-                  className="h-full w-full object-cover"
-                />
+                <button
+                  type="button"
+                  aria-label="查看大图"
+                  onClick={() => setLightboxOpen(true)}
+                  className="absolute inset-0 block h-full w-full"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={meal.photoUrl}
+                    alt="这一餐的照片"
+                    className="h-full w-full object-cover"
+                  />
+                </button>
               ) : (
                 <div className="flex h-full items-center justify-center text-paper/40">
                   <PlateIcon width={64} height={64} strokeWidth={1.2} />
                 </div>
               )}
-              <span className="absolute left-3 top-3 border-[3px] border-paper bg-black px-3 py-1.5 font-mono text-label uppercase text-paper">
+              <span className="pointer-events-none absolute left-3 top-3 border-[3px] border-paper bg-black px-3 py-1.5 font-mono text-label uppercase text-paper">
                 {items.length} 项食物
               </span>
             </div>
@@ -255,6 +264,13 @@ export default function MealDetailPage() {
           onSave={updateItem}
           onRemove={removeItem}
           onClose={() => setEditingId(null)}
+        />
+      )}
+
+      {lightboxOpen && meal?.photoUrl && (
+        <PhotoLightbox
+          src={meal.photoUrl}
+          onClose={() => setLightboxOpen(false)}
         />
       )}
     </div>
