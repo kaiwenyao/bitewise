@@ -22,6 +22,21 @@ body {
   touch-action: manipulation;
 }
 
+/*
+ * iOS Safari 的日期/时间控件两个坑:
+ * 1. 原生复合外观有固有宽度,溢出容器且不受 CSS 约束
+ *    → appearance: none 后按普通文本渲染,宽度受控(点击仍调起系统选择器)
+ * 2. 字号小于 16px 时聚焦会自动放大页面,造成横向溢出 → 强制 16px
+ */
+input[type="date"],
+input[type="time"] {
+  -webkit-appearance: none;
+  appearance: none;
+  min-width: 0;
+  max-width: 100%;
+  font-size: 16px;
+}
+
 /* 尊重系统「减少动态效果」设置 */
 @media (prefers-reduced-motion: reduce) {
   *,
