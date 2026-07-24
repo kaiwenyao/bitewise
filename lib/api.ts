@@ -13,8 +13,11 @@ export interface RecognizeResult {
 
 /** 拍照页识别完后存进 sessionStorage、结果页取出的结构 */
 export interface PendingMeal extends RecognizeResult {
-  photoBase64: string;
+  /** 纯文字记餐时为 null */
+  photoBase64: string | null;
   mimeType: string;
+  /** 用户补充说明 / 纯文字描述,结果页重试沿用 */
+  note?: string;
   /** 识别所用引擎,结果页重试沿用 */
   provider: AiProvider;
 }
@@ -31,7 +34,27 @@ async function request<T>(input: string, init?: RequestInit): Promise<T> {
   return data as T;
 }
 
-/** 压缩后的照片送去识别(只识别,不落盘) */
+/** 照片和/或文字送去识别(只识别,不落盘);image 与 note 至少其一 */
+export function recognizeMeal(input: {
+  image?: { base64: string; mimeType: string } | null;
+  note?: string;
+  provider?: AiProvider;
+}): Promise<RecognizeResult> {
+  const note = input.note?.trim() ?? "";
+  const image = input.image ?? null;
+  return request<RecognizeResult>("/api/recognize", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      image: image?.base64,
+      mimeType: image?.mimeType,
+      note: note || undefined,
+      provider: input.provider ?? "minimax",
+    }),
+  });
+}
+
+/** @deprecated 使用 recognizeMeal;保留兼容旧调用 */
 export function recognizePhoto(
   photo: {
     base64: string;
@@ -39,15 +62,7 @@ export function recognizePhoto(
   },
   provider: AiProvider = "minimax"
 ): Promise<RecognizeResult> {
-  return request<RecognizeResult>("/api/recognize", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      image: photo.base64,
-      mimeType: photo.mimeType,
-      provider,
-    }),
-  });
+  return recognizeMeal({ image: photo, provider });
 }
 
 /** 保存一餐到数据库(照片同时上传 Storage);createdAt 缺省为当前时间 */
