@@ -2,8 +2,10 @@ import type { FoodItem, HistoryEntry } from "./types";
 
 /**
  * 浏览器端数据访问层 —— 全部经由 Next.js Route Handler,
- * Supabase sb_secret 与 MiniMax 密钥只存在于服务端。
+ * Supabase sb_secret 与 AI 密钥只存在于服务端。
  */
+
+export type AiProvider = "minimax" | "openai";
 
 export interface RecognizeResult {
   items: Omit<FoodItem, "id">[];
@@ -13,6 +15,8 @@ export interface RecognizeResult {
 export interface PendingMeal extends RecognizeResult {
   photoBase64: string;
   mimeType: string;
+  /** 识别所用引擎,结果页重试沿用 */
+  provider: AiProvider;
 }
 
 /** sessionStorage 钥匙:拍照页识别完,结果页取出 */
@@ -28,14 +32,21 @@ async function request<T>(input: string, init?: RequestInit): Promise<T> {
 }
 
 /** 压缩后的照片送去识别(只识别,不落盘) */
-export function recognizePhoto(photo: {
-  base64: string;
-  mimeType: string;
-}): Promise<RecognizeResult> {
+export function recognizePhoto(
+  photo: {
+    base64: string;
+    mimeType: string;
+  },
+  provider: AiProvider = "minimax"
+): Promise<RecognizeResult> {
   return request<RecognizeResult>("/api/recognize", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ image: photo.base64, mimeType: photo.mimeType }),
+    body: JSON.stringify({
+      image: photo.base64,
+      mimeType: photo.mimeType,
+      provider,
+    }),
   });
 }
 

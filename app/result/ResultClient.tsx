@@ -7,6 +7,7 @@ import {
   PENDING_MEAL_KEY,
   recognizePhoto,
   saveMeal,
+  type AiProvider,
   type PendingMeal,
   type RecognizeResult,
 } from "@/lib/api";
@@ -30,6 +31,8 @@ export function ResultClient() {
   const [meal, setMeal] = useState<MealRecord | null>(null);
   /** 压缩后的照片(base64),识别为空时也保留,供重试与保存 */
   const [photo, setPhoto] = useState<{ base64: string; mimeType: string } | null>(null);
+  /** 识别所用引擎,重试沿用 */
+  const [provider, setProvider] = useState<AiProvider>("minimax");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -55,6 +58,7 @@ export function ResultClient() {
     try {
       const pending = JSON.parse(raw) as PendingMeal;
       setPhoto({ base64: pending.photoBase64, mimeType: pending.mimeType });
+      setProvider(pending.provider === "openai" ? "openai" : "minimax");
       if (pending.items.length === 0) {
         setError("这张照片没认出食物");
         setStatus("error");
@@ -77,7 +81,7 @@ export function ResultClient() {
     setStatus("loading");
     setError("");
     try {
-      const result = await recognizePhoto(photo);
+      const result = await recognizePhoto(photo, provider);
       if (result.items.length === 0) {
         setMeal(null);
         setError("这张照片没认出食物");
@@ -92,7 +96,7 @@ export function ResultClient() {
       setStatus("error");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [photo, router]);
+  }, [photo, provider, router]);
 
   const total = useMemo(
     () => (meal ? sumMeal(meal.items) : null),

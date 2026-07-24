@@ -3,13 +3,28 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { TabBar } from "@/components/TabBar";
-import { PENDING_MEAL_KEY, recognizePhoto, type PendingMeal } from "@/lib/api";
+import {
+  PENDING_MEAL_KEY,
+  recognizePhoto,
+  type AiProvider,
+  type PendingMeal,
+} from "@/lib/api";
 import { compressPhoto } from "@/lib/image";
 
 type Status = "idle" | "working" | "error";
 /** pending=请求权限中 active=预览中 denied=被拒绝 unsupported=不支持 error=其他失败 */
 type CamState = "pending" | "active" | "denied" | "unsupported" | "error";
 
+const PROVIDER_KEY = "bitewise:aiProvider";
+
+function readStoredProvider(): AiProvider {
+  if (typeof window === "undefined") return "minimax";
+  try {
+    return localStorage.getItem(PROVIDER_KEY) === "openai" ? "openai" : "minimax";
+  } catch {
+    return "minimax";
+  }
+}
 /**
  * 拍照页:getUserMedia 实时取景 → 快门抓帧 → 压缩识别 → 结果页。
  * 相机不可用(拒绝授权/非 HTTPS/无设备)时,快门回退为系统相机文件选择器。
@@ -26,6 +41,21 @@ export default function CapturePage() {
   const [camState, setCamState] = useState<CamState>("pending");
   const [flash, setFlash] = useState(false);
   const [torchSupported, setTorchSupported] = useState(false);
+  const [provider, setProvider] = useState<AiProvider>("minimax");
+
+  // 恢复上次选择的识别引擎
+  useEffect(() => {
+    setProvider(readStoredProvider());
+  }, []);
+
+  const selectProvider = (next: AiProvider) => {
+    setProvider(next);
+    try {
+      localStorage.setItem(PROVIDER_KEY, next);
+    } catch {
+      /* ignore quota / private mode */
+    }
+  };
 
   // 启动实时取景;页面卸载时释放摄像头
   useEffect(() => {
@@ -82,11 +112,12 @@ export default function CapturePage() {
     try {
       // 客户端压缩后再识别;原图不出浏览器,保存时才上传
       const photo = await compressPhoto(file);
-      const result = await recognizePhoto(photo);
+      const result = await recognizePhoto(photo, provider);
       const pending: PendingMeal = {
         photoBase64: photo.base64,
         mimeType: photo.mimeType,
         items: result.items,
+        provider,
       };
       sessionStorage.setItem(PENDING_MEAL_KEY, JSON.stringify(pending));
       router.push("/result");
@@ -154,14 +185,32 @@ export default function CapturePage() {
       <input ref={galleryInput} {...inputProps} />
 
       {/* 状态条 */}
-      <div className="flex items-center justify-between border-b-[3px] border-black px-6 py-2">
-        <span className="flex items-center gap-2 font-mono text-data uppercase">
-          <span className="h-2 w-2 animate-pulse bg-black" />
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b-[3px] border-black px-6 py-2">
+        <span className="flex min-w-0 items-center gap-2 font-mono text-data uppercase">
+          <span className="h-2 w-2 shrink-0 animate-pulse bg-black" />
           ANALYSIS_MODE: {status === "working" ? "RUNNING" : "ACTIVE"}
         </span>
-        <span className="font-mono text-data uppercase">
-          LENS_01: {camState === "active" ? "LIVE" : "OFFLINE"}
-        </span>
+        <div
+          className="flex shrink-0 border-[2px] border-black"
+          role="group"
+          aria-label="识别引擎"
+        >
+          {(["minimax", "openai"] as const).map((p) => (
+            <button
+              key={p}
+              type="button"
+              disabled={status === "working"}
+              onClick={() => selectProvider(p)}
+              className={`px-2 py-0.5 font-mono text-label uppercase transition-colors duration-fast disabled:opacity-40 ${
+                provider === p
+                  ? "bg-black text-paper"
+                  : "bg-paper text-ink hover:bg-black hover:text-paper"
+              }`}
+            >
+              {p === "minimax" ? "MiniMax" : "OpenAI"}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* 顶栏 */}
