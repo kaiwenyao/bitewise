@@ -5,6 +5,8 @@ export const runtime = "nodejs";
 /** base64 字符串长度上限(~6MB 图片),防止超大请求体 */
 const MAX_BASE64_LEN = 8 * 1024 * 1024;
 
+type AiProvider = "minimax" | "openai";
+
 interface RecognizedItem {
   name: string;
   portionGrams: number;
@@ -24,19 +26,28 @@ const PROMPT = `你是食物营养估算助手。分析这张餐食照片,识别
 照片里认不出食物时返回 {"items":[]}`;
 
 /**
- * POST /api/recognize — { image: base64, mimeType }
+ * POST /api/recognize — { image: base64, mimeType, provider? }
  * 只做识别,不写 Storage、不写库;照片随保存动作上传(见 /api/meals)。
  */
 export async function POST(req: Request) {
   try {
-    const body = (await req.json()) as { image?: string; mimeType?: string };
+    const body = (await req.json()) as {
+      image?: string;
+      mimeType?: string;
+      provider?: string;
+    };
     if (!body.image) {
       return NextResponse.json({ error: "缺少 image" }, { status: 400 });
     }
     if (body.image.length > MAX_BASE64_LEN) {
       return NextResponse.json({ error: "图片过大" }, { status: 413 });
     }
-    const items = await recognize(body.image, body.mimeType ?? "image/jpeg");
+    const provider = parseProvider(body.provider);
+    const mimeType = body.mimeType ?? "image/jpeg";
+    const items =
+      provider === "openai"
+        ? await recognizeOpenAI(body.image, mimeType)
+        : await recognizeMiniMax(body.image, mimeType);
     return NextResponse.json({ items });
   } catch (e) {
     const message = e instanceof Error ? e.message : "识别失败";
@@ -44,8 +55,12 @@ export async function POST(req: Request) {
   }
 }
 
+function parseProvider(value: string | undefined): AiProvider {
+  return value === "openai" ? "openai" : "minimax";
+}
+
 /** 调 MiniMax Token Plan 的视觉端点,返回识别出的食物列表 */
-async function recognize(
+async function recognizeMiniMax(
   imageBase64: string,
   mimeType: string
 ): Promise<RecognizedItem[]> {
@@ -79,6 +94,73 @@ async function recognize(
   }
 
   return parseItems(typeof data?.content === "string" ? data.content : "");
+}
+
+/** 调 OpenAI Chat Completions 视觉接口 */
+async function recognizeOpenAI(
+  imageBase64: string,
+  mimeType: string
+): Promise<RecognizedItem[]> {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) throw new Error("缺少 OPENAI_API_KEY,请检查 .env.local");
+  const baseUrl = (
+    process.env.OPENAI_BASE_URL ?? "https://api.openai.com/v1"
+  ).replace(/\/$/, "");
+  const model = process.env.OPENAI_MODEL ?? "gpt-4.1-mini";
+
+  const res = await fetch(`${baseUrl}/chat/completions`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model,
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "text", text: PROMPT },
+            {
+              type: "image_url",
+              image_url: {
+                url: `data:${mimeType};base64,${imageBase64}`,
+                detail: "low",
+              },
+            },
+          ],
+        },
+      ],
+      response_format: { type: "json_object" },
+      max_tokens: 1024,
+    }),
+  });
+
+  const raw = await res.text();
+  type OpenAIResponse = {
+    error?: { message?: string };
+    choices?: { message?: { content?: string } }[];
+  };
+  let data: OpenAIResponse | null = null;
+  try {
+    data = JSON.parse(raw) as OpenAIResponse;
+  } catch {
+    // BASE_URL 少写 /v1 时网关常返回 200 HTML 页面
+    throw new Error(
+      `OpenAI 返回非 JSON(检查 OPENAI_BASE_URL 是否以 /v1 结尾)`
+    );
+  }
+  if (!res.ok) {
+    const detail =
+      typeof data?.error?.message === "string" ? data.error.message : null;
+    throw new Error(detail ?? `AI 识别请求失败(${res.status})`);
+  }
+
+  const content = data?.choices?.[0]?.message?.content;
+  if (typeof content !== "string") {
+    throw new Error("OpenAI 未返回识别内容");
+  }
+  return parseItems(content);
 }
 
 /** 模型可能带寒暄或代码围栏,宽松提取 JSON;坏数据宁可丢弃 */
