@@ -40,3 +40,15 @@ export interface HistoryDay {
   label: string;
   entries: HistoryEntry[];
 }
+
+/** 用户资料:每日摄入目标(单一 kcal) */
+export interface UserProfile {
+  dailyKcalGoal: number;
+}
+
+/** 某一本地日的摄入合计(kcal mid) */
+export interface DailyStat {
+  /** YYYY-MM-DD(用户本地日) */
+  date: string;
+  kcalMid: number;
+}
