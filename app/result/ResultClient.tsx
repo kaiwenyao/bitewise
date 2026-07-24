@@ -16,6 +16,7 @@ import { FoodRow } from "@/components/FoodRow";
 import { TotalCard } from "@/components/TotalCard";
 import { EditSheet } from "@/components/EditSheet";
 import { TabBar } from "@/components/TabBar";
+import { BottomSheet } from "@/components/BottomSheet";
 import { Button } from "@/components/ui/Button";
 import { CameraIcon, CheckIcon, PlateIcon } from "@/components/icons";
 
@@ -31,8 +32,9 @@ export function ResultClient() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  /** 记录时间(datetime-local 值),默认现在,可手动改 */
+  /** 记录时间(datetime-local 值),点保存时弹出设置,默认现在 */
   const [when, setWhen] = useState("");
+  const [timeSheetOpen, setTimeSheetOpen] = useState(false);
 
   const toMeal = (result: RecognizeResult): MealRecord => ({
     id: crypto.randomUUID(),
@@ -110,8 +112,8 @@ export function ResultClient() {
     setMeal((m) => m && { ...m, items: m.items.filter((i) => i.id !== id) });
   };
 
-  const handleSave = async () => {
-    if (!meal || saving || saved) return;
+  const handleSave = async (): Promise<boolean> => {
+    if (!meal || saving || saved) return false;
     setSaving(true);
     try {
       const whenDate = when ? new Date(when) : null;
@@ -126,8 +128,10 @@ export function ResultClient() {
       });
       sessionStorage.removeItem(PENDING_MEAL_KEY);
       setSaved(true);
+      return true;
     } catch (e) {
       setError(e instanceof Error ? e.message : "保存失败,请重试");
+      return false;
     } finally {
       setSaving(false);
     }
@@ -169,27 +173,6 @@ export function ResultClient() {
               <TotalCard total={total} animate />
             </div>
 
-            {/* 记录时间:默认现在,补记可改 */}
-            <div className="mt-6">
-              <label
-                htmlFor="meal-time"
-                className="font-mono text-label uppercase text-ink-muted"
-              >
-                记录时间(默认现在)
-              </label>
-              <input
-                id="meal-time"
-                type="datetime-local"
-                value={when}
-                max={toDateTimeInputValue(new Date())}
-                onChange={(e) => {
-                  setWhen(e.target.value);
-                  setSaved(false);
-                }}
-                className="mt-2 h-12 w-full border-[3px] border-black bg-paper px-4 font-mono text-data outline-none focus:bg-black focus:text-paper"
-              />
-            </div>
-
             {error && (
               <p className="mt-4 border-[3px] border-black bg-terracotta px-4 py-3 text-center font-mono text-data uppercase text-paper">
                 {error}
@@ -209,8 +192,8 @@ export function ResultClient() {
                 已存到今天
               </Button>
             ) : (
-              <Button onClick={handleSave} disabled={saving}>
-                {saving ? "保存中…" : "保存到今天"}
+              <Button onClick={() => setTimeSheetOpen(true)} disabled={saving}>
+                保存到今天
               </Button>
             )}
           </div>
@@ -226,6 +209,46 @@ export function ResultClient() {
           onRemove={removeItem}
           onClose={() => setEditingId(null)}
         />
+      )}
+
+      {/* 保存前设置记录时间 */}
+      {timeSheetOpen && (
+        <BottomSheet onClose={() => setTimeSheetOpen(false)} ariaLabel="设置记录时间">
+          {(close) => (
+            <>
+              <p className="mb-5 font-mono text-label uppercase text-ink-muted">
+                MEAL_TIME // 这餐是什么时候吃的
+              </p>
+              <input
+                type="datetime-local"
+                value={when}
+                max={toDateTimeInputValue(new Date())}
+                onChange={(e) => setWhen(e.target.value)}
+                aria-label="记录时间"
+                className="h-12 w-full border-[3px] border-black bg-paper px-4 font-mono text-data outline-none focus:bg-black focus:text-paper"
+              />
+              <p className="mt-2 font-mono text-label uppercase text-ink-faint">
+                默认当前时间,补记可改
+              </p>
+              {error && (
+                <p className="mt-3 border-[3px] border-black bg-terracotta px-4 py-3 text-center font-mono text-data uppercase text-paper">
+                  {error}
+                </p>
+              )}
+              <div className="mt-6">
+                <Button
+                  onClick={async () => {
+                    const ok = await handleSave();
+                    if (ok) close();
+                  }}
+                  disabled={saving}
+                >
+                  {saving ? "保存中…" : "确认保存"}
+                </Button>
+              </div>
+            </>
+          )}
+        </BottomSheet>
       )}
     </div>
   );

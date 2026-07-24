@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { FoodItem } from "@/lib/types";
 import { roundKcal } from "@/lib/format";
 import { Button } from "./ui/Button";
+import { BottomSheet } from "./BottomSheet";
 import { MinusIcon, PlusIcon } from "./icons";
 
 interface EditSheetProps {
@@ -21,22 +22,8 @@ export function EditSheet({ item, onSave, onRemove, onClose }: EditSheetProps) {
   const [name, setName] = useState(item.name);
   const [grams, setGrams] = useState(item.portionGrams);
   const [mid, setMid] = useState(roundKcal(item.kcal.mid));
-  const [closing, setClosing] = useState(false);
 
-  const close = () => {
-    setClosing(true);
-    setTimeout(onClose, 220);
-  };
-
-  // Esc 关闭
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && close();
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const save = () => {
+  const save = (close: () => void) => {
     const ratio = item.kcal.mid > 0 ? mid / item.kcal.mid : 1;
     onSave({
       ...item,
@@ -55,66 +42,52 @@ export function EditSheet({ item, onSave, onRemove, onClose }: EditSheetProps) {
   const high = roundKcal(item.kcal.mid > 0 ? (item.kcal.high / item.kcal.mid) * mid : mid);
 
   return (
-    <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label="修正食物">
-      {/* 背层 */}
-      <button
-        aria-label="关闭"
-        onClick={close}
-        className={`absolute inset-0 bg-black/60 ${
-          closing ? "" : "animate-[fade-in_200ms_ease-out]"
-        }`}
-        style={closing ? { opacity: 0, transition: "opacity 200ms" } : undefined}
-      />
-      {/* 抽屉 */}
-      <div
-        className={`absolute inset-x-0 bottom-0 mx-auto w-full max-w-[430px] border-t-[3px] border-black bg-paper px-6 pb-8 pt-6 ${
-          closing
-            ? "animate-[sheet-out_220ms_ease-in_forwards]"
-            : "animate-[sheet-in_250ms_ease-out]"
-        }`}
-      >
-        <p className="mb-5 font-mono text-label uppercase text-ink-muted">
-          EDIT_ITEM // 修正食物
-        </p>
+    <BottomSheet onClose={onClose} ariaLabel="修正食物">
+      {(close) => (
+        <>
+          <p className="mb-5 font-mono text-label uppercase text-ink-muted">
+            EDIT_ITEM // 修正食物
+          </p>
 
-        <label
-          className="block font-mono text-label uppercase text-ink-muted"
-          htmlFor="food-name"
-        >
-          名称
-        </label>
-        <input
-          id="food-name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="mt-2 h-12 w-full border-[3px] border-black bg-paper px-4 text-body-lg outline-none focus:bg-black focus:text-paper"
-        />
-
-        <Stepper
-          label="份量"
-          display={`约 ${grams} g`}
-          onDec={() => setGrams((g) => Math.max(0, g - 10))}
-          onInc={() => setGrams((g) => g + 10)}
-        />
-        <Stepper
-          label="热量"
-          display={`约 ${mid} kcal`}
-          hint={`区间 ${low}–${high} kcal,随中值等比调整`}
-          onDec={() => setMid((k) => Math.max(0, k - 10))}
-          onInc={() => setMid((k) => k + 10)}
-        />
-
-        <div className="mt-6">
-          <Button onClick={save}>完成</Button>
-          <button
-            onClick={() => onRemove(item.id)}
-            className="mt-3 flex h-11 w-full items-center justify-center font-mono text-data uppercase text-ink-faint transition-colors duration-fast hover:text-ink"
+          <label
+            className="block font-mono text-label uppercase text-ink-muted"
+            htmlFor="food-name"
           >
-            移除此项
-          </button>
-        </div>
-      </div>
-    </div>
+            名称
+          </label>
+          <input
+            id="food-name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="mt-2 h-12 w-full border-[3px] border-black bg-paper px-4 text-body-lg outline-none focus:bg-black focus:text-paper"
+          />
+
+          <Stepper
+            label="份量"
+            display={`约 ${grams} g`}
+            onDec={() => setGrams((g) => Math.max(0, g - 10))}
+            onInc={() => setGrams((g) => g + 10)}
+          />
+          <Stepper
+            label="热量"
+            display={`约 ${mid} kcal`}
+            hint={`区间 ${low}–${high} kcal,随中值等比调整`}
+            onDec={() => setMid((k) => Math.max(0, k - 10))}
+            onInc={() => setMid((k) => k + 10)}
+          />
+
+          <div className="mt-6">
+            <Button onClick={() => save(close)}>完成</Button>
+            <button
+              onClick={() => onRemove(item.id)}
+              className="mt-3 flex h-11 w-full items-center justify-center font-mono text-data uppercase text-ink-faint transition-colors duration-fast hover:text-ink"
+            >
+              移除此项
+            </button>
+          </div>
+        </>
+      )}
+    </BottomSheet>
   );
 }
 
