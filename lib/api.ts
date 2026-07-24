@@ -1,4 +1,4 @@
-import type { FoodItem, HistoryEntry } from "./types";
+import type { DailyStat, FoodItem, HistoryEntry, UserProfile } from "./types";
 
 /**
  * 浏览器端数据访问层 —— 全部经由 Next.js Route Handler,
@@ -91,4 +91,26 @@ export async function updateMeal(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(patch),
   });
+}
+
+/** 读取每日 kcal 目标 */
+export function fetchProfile(): Promise<UserProfile> {
+  return request<UserProfile>("/api/profile");
+}
+
+/** 更新每日 kcal 目标 */
+export function updateProfile(dailyKcalGoal: number): Promise<UserProfile> {
+  return request<UserProfile>("/api/profile", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ dailyKcalGoal }),
+  });
+}
+
+/** 近 N 天按本地日聚合的热量(无记录日不返回) */
+export function fetchDailyStats(days = 84): Promise<{ days: DailyStat[] }> {
+  const tzOffsetMinutes = new Date().getTimezoneOffset();
+  return request(
+    `/api/stats/daily?days=${days}&tzOffsetMinutes=${tzOffsetMinutes}`
+  );
 }
