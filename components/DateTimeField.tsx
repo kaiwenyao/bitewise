@@ -25,7 +25,7 @@ export function DateTimeField({
 }: DateTimeFieldProps) {
   const [date = "", time = ""] = value.split("T");
   return (
-    <div className="grid grid-cols-2 gap-3">
+    <div className="grid grid-cols-1 gap-3">
       <input
         type="date"
         aria-label={ariaLabel ? `${ariaLabel}日期` : "日期"}
