@@ -24,17 +24,23 @@ body {
 }
 
 /*
- * iOS Safari 的日期/时间控件两个坑:
- * 1. 原生复合外观有固有宽度,溢出容器且不受 CSS 约束
- *    → appearance: none 后按普通文本渲染,宽度受控(点击仍调起系统选择器)
- * 2. 字号小于 16px 时聚焦会自动放大页面,造成横向溢出 → 强制 16px
+ * DateTimeField:透明原生 date/time 铺满自定义壳。
+ * iOS 仍会用系统本地化格式画控件文案,无法靠 CSS 统一 → 隐藏原生外观,
+ * 由可见层自绘「DD / MM / YYYY」「HH : MM」;16px 防止 iOS 聚焦缩放。
  */
-input[type="date"],
-input[type="time"] {
+.datetime-overlay-input {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  border: 0;
+  padding: 0;
+  opacity: 0;
+  cursor: pointer;
   -webkit-appearance: none;
   appearance: none;
-  min-width: 0;
-  max-width: 100%;
   font-size: 16px;
 }
 
