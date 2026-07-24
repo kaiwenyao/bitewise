@@ -137,12 +137,13 @@ async function recognizeOpenAI(
   });
 
   const raw = await res.text();
-  let data: {
+  type OpenAIResponse = {
     error?: { message?: string };
     choices?: { message?: { content?: string } }[];
-  } | null = null;
+  };
+  let data: OpenAIResponse | null = null;
   try {
-    data = JSON.parse(raw) as typeof data;
+    data = JSON.parse(raw) as OpenAIResponse;
   } catch {
     // BASE_URL 少写 /v1 时网关常返回 200 HTML 页面
     throw new Error(
