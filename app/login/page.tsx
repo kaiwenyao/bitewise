@@ -38,12 +38,12 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-dvh flex-col">
       {/* 状态条 */}
-      <div className="flex items-center justify-between border-b-[3px] border-black px-6 py-2">
-        <span className="flex items-center gap-2 font-mono text-data uppercase">
-          <span className="h-2 w-2 animate-pulse bg-black" />
-          AUTH_GATE: LOCKED
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b-[3px] border-black px-6 py-2">
+        <span className="flex min-w-0 items-center gap-2 font-mono text-label uppercase">
+          <span className="h-2 w-2 shrink-0 animate-pulse bg-black" />
+          AUTH: LOCKED
         </span>
-        <span className="font-mono text-data uppercase">V0.1</span>
+        <span className="min-w-0 font-mono text-label uppercase">V0.1</span>
       </div>
 
       <main className="flex flex-1 flex-col justify-center px-6 pb-16">
