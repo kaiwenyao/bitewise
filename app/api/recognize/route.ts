@@ -4,6 +4,8 @@ export const runtime = "nodejs";
 
 /** base64 字符串长度上限(~6MB 图片),防止超大请求体 */
 const MAX_BASE64_LEN = 8 * 1024 * 1024;
+/** 用户补充说明字数上限 */
+const MAX_NOTE_LEN = 200;
 
 type AiProvider = "minimax" | "openai";
 
@@ -13,7 +15,7 @@ interface RecognizedItem {
   kcal: { low: number; mid: number; high: number };
 }
 
-const PROMPT = `你是食物营养估算助手。分析这张餐食照片,识别盘中可食用的主要食物。
+const VISION_PROMPT = `你是食物营养估算助手。分析这张餐食照片,识别盘中可食用的主要食物。
 
 规则:
 - 只列出构成这餐的主要食物;忽略装饰物(点缀的香草、摆盘花、柠檬片等)、餐具、桌面、包装和背景物品
@@ -25,29 +27,58 @@ const PROMPT = `你是食物营养估算助手。分析这张餐食照片,识别
 只返回 JSON,不要输出任何其他文字:{"items":[{"name":"烤鸡胸肉","portionGrams":150,"kcal":{"low":210,"mid":248,"high":285}}]}
 照片里认不出食物时返回 {"items":[]}`;
 
+const TEXT_PROMPT = `你是食物营养估算助手。根据用户的文字描述,识别这一餐包含的食物。
+
+规则:
+- 只列出用户明确提到的食物;不要编造未提及的食物
+- 同一种食物合并成一项,不要重复列出
+- 宁缺毋滥:少列比多列好
+- 份量可按常见单份合理估计(如「一杯咖啡」「一根香蕉」)
+
+对每种食物估计:名称(中文)、份量(克)、热量的诚实区间(low/mid/high,单位 kcal,满足 low <= mid <= high,不要伪精确)。
+只返回 JSON,不要输出任何其他文字:{"items":[{"name":"美式咖啡","portionGrams":240,"kcal":{"low":2,"mid":5,"high":10}}]}
+描述里认不出食物时返回 {"items":[]}`;
+
 /**
- * POST /api/recognize — { image: base64, mimeType, provider? }
- * 只做识别,不写 Storage、不写库;照片随保存动作上传(见 /api/meals)。
+ * POST /api/recognize — { image?, mimeType?, note?, provider? }
+ * image 与 note 至少其一。只做识别,不写 Storage、不写库。
  */
 export async function POST(req: Request) {
   try {
     const body = (await req.json()) as {
       image?: string;
       mimeType?: string;
+      note?: string;
       provider?: string;
     };
-    if (!body.image) {
-      return NextResponse.json({ error: "缺少 image" }, { status: 400 });
+
+    const note =
+      typeof body.note === "string" ? body.note.trim().slice(0, MAX_NOTE_LEN) : "";
+    const image =
+      typeof body.image === "string" && body.image.length > 0
+        ? body.image
+        : undefined;
+
+    if (!image && !note) {
+      return NextResponse.json(
+        { error: "请提供照片或文字说明" },
+        { status: 400 }
+      );
     }
-    if (body.image.length > MAX_BASE64_LEN) {
+    if (image && image.length > MAX_BASE64_LEN) {
       return NextResponse.json({ error: "图片过大" }, { status: 413 });
     }
+
     const provider = parseProvider(body.provider);
     const mimeType = body.mimeType ?? "image/jpeg";
-    const items =
-      provider === "openai"
-        ? await recognizeOpenAI(body.image, mimeType)
-        : await recognizeMiniMax(body.image, mimeType);
+    const items = image
+      ? provider === "openai"
+        ? await recognizeOpenAIVision(image, mimeType, note)
+        : await recognizeMiniMaxVision(image, mimeType, note)
+      : provider === "openai"
+        ? await recognizeOpenAIText(note)
+        : await recognizeMiniMaxText(note);
+
     return NextResponse.json({ items });
   } catch (e) {
     const message = e instanceof Error ? e.message : "识别失败";
@@ -59,10 +90,24 @@ function parseProvider(value: string | undefined): AiProvider {
   return value === "openai" ? "openai" : "minimax";
 }
 
-/** 调 MiniMax Token Plan 的视觉端点,返回识别出的食物列表 */
-async function recognizeMiniMax(
+function buildVisionPrompt(note: string): string {
+  if (!note) return VISION_PROMPT;
+  return `${VISION_PROMPT}
+
+用户补充说明(以图为准,说明仅用于消歧义或份量/做法参考):${note}`;
+}
+
+function buildTextPrompt(note: string): string {
+  return `${TEXT_PROMPT}
+
+用户描述:${note}`;
+}
+
+/** 调 MiniMax Token Plan 的视觉端点 */
+async function recognizeMiniMaxVision(
   imageBase64: string,
-  mimeType: string
+  mimeType: string,
+  note: string
 ): Promise<RecognizedItem[]> {
   const apiKey = process.env.MINIMAX_API_KEY;
   if (!apiKey) throw new Error("缺少 MINIMAX_API_KEY,请检查 .env.local");
@@ -77,7 +122,7 @@ async function recognizeMiniMax(
       Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      prompt: PROMPT,
+      prompt: buildVisionPrompt(note),
       image_url: `data:${mimeType};base64,${imageBase64}`,
     }),
   });
@@ -86,7 +131,6 @@ async function recognizeMiniMax(
   if (!res.ok) {
     throw new Error(`AI 识别请求失败(${res.status})`);
   }
-  // MiniMax 业务错误:HTTP 200 但 base_resp.status_code 非 0
   if (data?.base_resp && data.base_resp.status_code !== 0) {
     throw new Error(
       `AI 识别失败:${data.base_resp.status_msg ?? "未知错误"}`
@@ -96,18 +140,39 @@ async function recognizeMiniMax(
   return parseItems(typeof data?.content === "string" ? data.content : "");
 }
 
-/** 调 OpenAI Chat Completions 视觉接口 */
-async function recognizeOpenAI(
-  imageBase64: string,
-  mimeType: string
-): Promise<RecognizedItem[]> {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) throw new Error("缺少 OPENAI_API_KEY,请检查 .env.local");
+/** MiniMax OpenAI 兼容文本接口(纯文字记餐) */
+async function recognizeMiniMaxText(note: string): Promise<RecognizedItem[]> {
+  const apiKey = process.env.MINIMAX_API_KEY;
+  if (!apiKey) throw new Error("缺少 MINIMAX_API_KEY,请检查 .env.local");
   const baseUrl = (
-    process.env.OPENAI_BASE_URL ?? "https://api.openai.com/v1"
+    process.env.MINIMAX_BASE_URL ?? "https://api.minimaxi.com"
   ).replace(/\/$/, "");
-  const model = process.env.OPENAI_MODEL ?? "gpt-4.1-mini";
+  const model = process.env.MINIMAX_TEXT_MODEL ?? "MiniMax-M2";
 
+  const res = await fetch(`${baseUrl}/v1/chat/completions`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model,
+      messages: [{ role: "user", content: buildTextPrompt(note) }],
+      response_format: { type: "json_object" },
+      max_tokens: 1024,
+    }),
+  });
+
+  return parseOpenAICompatible(res, "MiniMax");
+}
+
+/** OpenAI 视觉识别(可附 note) */
+async function recognizeOpenAIVision(
+  imageBase64: string,
+  mimeType: string,
+  note: string
+): Promise<RecognizedItem[]> {
+  const { apiKey, baseUrl, model } = openaiConfig();
   const res = await fetch(`${baseUrl}/chat/completions`, {
     method: "POST",
     headers: {
@@ -120,7 +185,7 @@ async function recognizeOpenAI(
         {
           role: "user",
           content: [
-            { type: "text", text: PROMPT },
+            { type: "text", text: buildVisionPrompt(note) },
             {
               type: "image_url",
               image_url: {
@@ -136,18 +201,55 @@ async function recognizeOpenAI(
     }),
   });
 
+  return parseOpenAICompatible(res, "OpenAI");
+}
+
+/** OpenAI 纯文字识别 */
+async function recognizeOpenAIText(note: string): Promise<RecognizedItem[]> {
+  const { apiKey, baseUrl, model } = openaiConfig();
+  const res = await fetch(`${baseUrl}/chat/completions`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model,
+      messages: [{ role: "user", content: buildTextPrompt(note) }],
+      response_format: { type: "json_object" },
+      max_tokens: 1024,
+    }),
+  });
+
+  return parseOpenAICompatible(res, "OpenAI");
+}
+
+function openaiConfig() {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) throw new Error("缺少 OPENAI_API_KEY,请检查 .env.local");
+  const baseUrl = (
+    process.env.OPENAI_BASE_URL ?? "https://api.openai.com/v1"
+  ).replace(/\/$/, "");
+  const model = process.env.OPENAI_MODEL ?? "gpt-4.1-mini";
+  return { apiKey, baseUrl, model };
+}
+
+type OpenAICompatibleResponse = {
+  error?: { message?: string };
+  choices?: { message?: { content?: string } }[];
+};
+
+async function parseOpenAICompatible(
+  res: Response,
+  label: string
+): Promise<RecognizedItem[]> {
   const raw = await res.text();
-  type OpenAIResponse = {
-    error?: { message?: string };
-    choices?: { message?: { content?: string } }[];
-  };
-  let data: OpenAIResponse | null = null;
+  let data: OpenAICompatibleResponse | null = null;
   try {
-    data = JSON.parse(raw) as OpenAIResponse;
+    data = JSON.parse(raw) as OpenAICompatibleResponse;
   } catch {
-    // BASE_URL 少写 /v1 时网关常返回 200 HTML 页面
     throw new Error(
-      `OpenAI 返回非 JSON(检查 OPENAI_BASE_URL 是否以 /v1 结尾)`
+      `${label} 返回非 JSON(检查 BASE_URL 是否以 /v1 结尾)`
     );
   }
   if (!res.ok) {
@@ -158,7 +260,7 @@ async function recognizeOpenAI(
 
   const content = data?.choices?.[0]?.message?.content;
   if (typeof content !== "string") {
-    throw new Error("OpenAI 未返回识别内容");
+    throw new Error(`${label} 未返回识别内容`);
   }
   return parseItems(content);
 }
@@ -182,9 +284,8 @@ function parseItems(content: string): RecognizedItem[] {
           i.name.length <= 30 &&
           i.kcal
       )
-      .slice(0, 12) // 兜底:防模型失控报出一长串
+      .slice(0, 12)
       .map((i) => {
-        // 强制区间有序:low <= mid <= high
         const nums = [i.kcal.low, i.kcal.mid, i.kcal.high].map((n) =>
           Math.max(0, Math.round(Number(n) || 0))
         );

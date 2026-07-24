@@ -3,9 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { TabBar } from "@/components/TabBar";
+import { BottomSheet } from "@/components/BottomSheet";
+import { Button } from "@/components/ui/Button";
 import {
   PENDING_MEAL_KEY,
-  recognizePhoto,
+  recognizeMeal,
   type AiProvider,
   type PendingMeal,
 } from "@/lib/api";
@@ -16,6 +18,7 @@ type Status = "idle" | "working" | "error";
 type CamState = "pending" | "active" | "denied" | "unsupported" | "error";
 
 const PROVIDER_KEY = "bitewise:aiProvider";
+const MAX_NOTE_LEN = 200;
 
 function readStoredProvider(): AiProvider {
   if (typeof window === "undefined") return "minimax";
@@ -25,9 +28,10 @@ function readStoredProvider(): AiProvider {
     return "minimax";
   }
 }
+
 /**
  * 拍照页:getUserMedia 实时取景 → 快门抓帧 → 压缩识别 → 结果页。
- * 相机不可用(拒绝授权/非 HTTPS/无设备)时,快门回退为系统相机文件选择器。
+ * 可附补充说明;也可纯文字记餐。相机不可用时快门回退系统相机。
  */
 export default function CapturePage() {
   const router = useRouter();
@@ -42,8 +46,11 @@ export default function CapturePage() {
   const [flash, setFlash] = useState(false);
   const [torchSupported, setTorchSupported] = useState(false);
   const [provider, setProvider] = useState<AiProvider>("minimax");
+  /** 拍照时附带的可选补充说明 */
+  const [caption, setCaption] = useState("");
+  const [textSheetOpen, setTextSheetOpen] = useState(false);
+  const [textNote, setTextNote] = useState("");
 
-  // 恢复上次选择的识别引擎
   useEffect(() => {
     setProvider(readStoredProvider());
   }, []);
@@ -57,7 +64,6 @@ export default function CapturePage() {
     }
   };
 
-  // 启动实时取景;页面卸载时释放摄像头
   useEffect(() => {
     if (!navigator.mediaDevices?.getUserMedia) {
       setCamState("unsupported");
@@ -82,7 +88,6 @@ export default function CapturePage() {
           video.srcObject = stream;
           await video.play().catch(() => {});
         }
-        // 手电筒能力(部分 Android Chrome 支持;iOS Safari 不支持)
         const track = stream.getVideoTracks()[0];
         const caps = track?.getCapabilities?.() as
           | { torch?: boolean }
@@ -105,29 +110,57 @@ export default function CapturePage() {
     };
   }, []);
 
+  const stashAndGo = (pending: PendingMeal) => {
+    sessionStorage.setItem(PENDING_MEAL_KEY, JSON.stringify(pending));
+    router.push("/result");
+  };
+
   const handlePhoto = async (file: File | undefined) => {
     if (!file || status === "working") return;
     setStatus("working");
     setError("");
     try {
-      // 客户端压缩后再识别;原图不出浏览器,保存时才上传
       const photo = await compressPhoto(file);
-      const result = await recognizePhoto(photo, provider);
-      const pending: PendingMeal = {
+      const note = caption.trim().slice(0, MAX_NOTE_LEN);
+      const result = await recognizeMeal({
+        image: photo,
+        note: note || undefined,
+        provider,
+      });
+      stashAndGo({
         photoBase64: photo.base64,
         mimeType: photo.mimeType,
+        note: note || undefined,
         items: result.items,
         provider,
-      };
-      sessionStorage.setItem(PENDING_MEAL_KEY, JSON.stringify(pending));
-      router.push("/result");
+      });
     } catch (e) {
       setError(e instanceof Error ? e.message : "识别失败,请重试");
       setStatus("error");
     }
   };
 
-  /** 快门:预览中抓当前帧;否则回退系统相机 */
+  const handleTextRecognize = async (close: () => void) => {
+    const note = textNote.trim().slice(0, MAX_NOTE_LEN);
+    if (!note || status === "working") return;
+    setStatus("working");
+    setError("");
+    try {
+      const result = await recognizeMeal({ note, provider });
+      close();
+      stashAndGo({
+        photoBase64: null,
+        mimeType: "image/jpeg",
+        note,
+        items: result.items,
+        provider,
+      });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "识别失败,请重试");
+      setStatus("error");
+    }
+  };
+
   const handleShutter = () => {
     const video = videoRef.current;
     if (camState !== "active" || !video || !video.videoWidth) {
@@ -151,7 +184,6 @@ export default function CapturePage() {
     );
   };
 
-  /** 闪光灯 = 摄像头手电筒,仅在设备声明支持时可用 */
   const toggleFlash = async () => {
     const track = streamRef.current?.getVideoTracks()[0];
     if (!track || !torchSupported) return;
@@ -172,19 +204,18 @@ export default function CapturePage() {
     className: "hidden",
     onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
       handlePhoto(e.target.files?.[0]);
-      e.target.value = ""; // 允许重选同一张
+      e.target.value = "";
     },
   } as const;
 
   const flashActive = flash && torchSupported;
+  const textReady = textNote.trim().length > 0;
 
   return (
     <div className="flex min-h-dvh flex-col">
-      {/* 隐藏的文件选择器:回退路径(系统相机/图库) */}
       <input ref={shutterInput} capture="environment" {...inputProps} />
       <input ref={galleryInput} {...inputProps} />
 
-      {/* 状态条 */}
       <div className="flex flex-wrap items-center justify-between gap-2 border-b-[3px] border-black px-6 py-2">
         <span className="flex min-w-0 items-center gap-2 font-mono text-label uppercase">
           <span className="h-2 w-2 shrink-0 animate-pulse bg-black" />
@@ -213,7 +244,6 @@ export default function CapturePage() {
         </div>
       </div>
 
-      {/* 顶栏 */}
       <header className="flex items-center justify-between border-b-[3px] border-black px-6 py-4">
         <span
           className="material-symbols-outlined text-[28px]"
@@ -227,9 +257,7 @@ export default function CapturePage() {
         </div>
       </header>
 
-      {/* 取景区:实时预览 + 扫描框 */}
       <main className="relative flex flex-1 flex-col items-center justify-center overflow-hidden border-b-[3px] border-black bg-black">
-        {/* 实时画面 */}
         <video
           ref={videoRef}
           autoPlay
@@ -240,13 +268,30 @@ export default function CapturePage() {
           }`}
         />
 
-        {/* 扫描框 */}
+        {/* 手电筒:移到取景区角落,设备支持时才显示 */}
+        {torchSupported && (
+          <button
+            type="button"
+            onClick={toggleFlash}
+            aria-label="闪光灯"
+            className={`absolute right-4 top-4 z-30 flex h-11 w-11 items-center justify-center border-[3px] border-paper transition-colors duration-fast ${
+              flashActive ? "bg-paper text-black" : "bg-black text-paper hover:bg-paper hover:text-black"
+            }`}
+          >
+            <span
+              className="material-symbols-outlined text-[22px]"
+              style={flashActive ? { fontVariationSettings: "'FILL' 1" } : undefined}
+            >
+              bolt
+            </span>
+          </button>
+        )}
+
         <div className="relative z-10 flex h-64 w-64 flex-col justify-between sm:h-80 sm:w-80">
           <div className="flex w-full justify-between">
             <div className="h-8 w-8 border-l-[5px] border-t-[5px] border-paper" />
             <div className="h-8 w-8 border-r-[5px] border-t-[5px] border-paper" />
           </div>
-          {/* 十字线 */}
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center opacity-50">
             <div className="h-[2px] w-full bg-paper" />
             <div className="absolute h-full w-[2px] bg-paper" />
@@ -256,16 +301,16 @@ export default function CapturePage() {
             <div className="h-8 w-8 border-b-[5px] border-r-[5px] border-paper" />
           </div>
         </div>
-        {/* 扫描线动画 */}
         <div className="pointer-events-none absolute left-0 top-0 z-20 h-2 w-full animate-[scan_3s_ease-in-out_infinite] bg-gradient-to-b from-transparent via-paper/50 to-transparent" />
 
-        {/* 相机状态 / 识别中 / 错误提示 */}
         {camState === "pending" && (
           <div className="absolute inset-x-6 bottom-6 z-30 border-[3px] border-paper bg-black px-4 py-3 text-center font-mono text-data uppercase text-paper">
             请求相机权限中…
           </div>
         )}
-        {(camState === "denied" || camState === "unsupported" || camState === "error") && (
+        {(camState === "denied" ||
+          camState === "unsupported" ||
+          camState === "error") && (
           <div className="absolute inset-x-6 bottom-6 z-30 border-[3px] border-paper bg-black px-4 py-3 text-center font-mono text-data uppercase text-paper">
             {camState === "denied"
               ? "相机权限被拒,快门将打开系统相机"
@@ -276,7 +321,7 @@ export default function CapturePage() {
         )}
         {status === "working" && (
           <div className="absolute inset-x-6 bottom-6 z-30 border-[3px] border-paper bg-black px-4 py-3 text-center font-mono text-data uppercase text-paper">
-            上传并识别中,通常几秒…
+            识别中,通常几秒…
           </div>
         )}
         {status === "error" && (
@@ -286,9 +331,26 @@ export default function CapturePage() {
         )}
       </main>
 
-      {/* 拍摄控制条 */}
+      {/* 拍照时可选补充说明 */}
+      <div className="border-b-[3px] border-black bg-paper px-4 py-2">
+        <label htmlFor="photo-caption" className="sr-only">
+          补充说明
+        </label>
+        <input
+          id="photo-caption"
+          type="text"
+          maxLength={MAX_NOTE_LEN}
+          value={caption}
+          disabled={status === "working"}
+          onChange={(e) => setCaption(e.target.value)}
+          placeholder="补充说明（可选），如：少油 / 半份"
+          className="h-11 w-full border-[3px] border-black bg-paper px-3 font-mono text-data outline-none placeholder:text-ink-faint focus:bg-black focus:text-paper disabled:opacity-40"
+        />
+      </div>
+
       <div className="grid h-32 w-full shrink-0 grid-cols-3 border-b-[3px] border-black bg-paper">
         <button
+          type="button"
           onClick={() => galleryInput.current?.click()}
           disabled={status === "working"}
           className="group flex items-center justify-center border-r-[3px] border-black transition-colors duration-fast hover:bg-black disabled:opacity-40"
@@ -300,6 +362,7 @@ export default function CapturePage() {
         </button>
         <div className="flex items-center justify-center p-4">
           <button
+            type="button"
             onClick={handleShutter}
             disabled={status === "working"}
             aria-label="拍照"
@@ -313,29 +376,66 @@ export default function CapturePage() {
           </button>
         </div>
         <button
-          onClick={toggleFlash}
-          disabled={!torchSupported}
-          className={`group flex items-center justify-center border-l-[3px] border-black transition-colors duration-fast disabled:opacity-40 ${
-            flashActive ? "bg-black" : "hover:bg-black"
-          }`}
+          type="button"
+          onClick={() => setTextSheetOpen(true)}
+          disabled={status === "working"}
+          className="group flex items-center justify-center border-l-[3px] border-black transition-colors duration-fast hover:bg-black disabled:opacity-40"
         >
-          <span
-            className={`flex flex-col items-center gap-2 ${
-              flashActive ? "text-paper" : "group-hover:text-paper"
-            }`}
-          >
-            <span
-              className="material-symbols-outlined text-[32px]"
-              style={flashActive ? { fontVariationSettings: "'FILL' 1" } : undefined}
-            >
-              bolt
-            </span>
-            <span className="font-mono text-data uppercase">闪光灯</span>
+          <span className="flex flex-col items-center gap-2 group-hover:text-paper">
+            <span className="material-symbols-outlined text-[32px]">edit_note</span>
+            <span className="font-mono text-data uppercase">文字</span>
           </span>
         </button>
       </div>
 
       <TabBar />
+
+      {textSheetOpen && (
+        <BottomSheet
+          onClose={() => setTextSheetOpen(false)}
+          ariaLabel="文字记餐"
+        >
+          {(close) => (
+            <>
+              <p className="mb-5 font-mono text-label uppercase text-ink-muted">
+                TEXT_ENTRY // 写这餐吃了什么
+              </p>
+              <label
+                className="block font-mono text-label uppercase text-ink-muted"
+                htmlFor="text-meal-note"
+              >
+                描述
+              </label>
+              <textarea
+                id="text-meal-note"
+                rows={3}
+                maxLength={MAX_NOTE_LEN}
+                value={textNote}
+                disabled={status === "working"}
+                onChange={(e) => setTextNote(e.target.value)}
+                placeholder="一杯美式咖啡 / 一根香蕉"
+                className="mt-2 w-full resize-none border-[3px] border-black bg-paper px-4 py-3 font-mono text-data outline-none placeholder:text-ink-faint focus:bg-black focus:text-paper disabled:opacity-40"
+              />
+              <p className="mt-2 font-mono text-label uppercase text-ink-faint">
+                {textNote.trim().length}/{MAX_NOTE_LEN}
+              </p>
+              {status === "error" && error && (
+                <p className="mt-3 border-[3px] border-black bg-terracotta px-4 py-3 text-center font-mono text-data uppercase text-paper">
+                  {error}
+                </p>
+              )}
+              <div className="mt-6">
+                <Button
+                  onClick={() => handleTextRecognize(close)}
+                  disabled={!textReady || status === "working"}
+                >
+                  {status === "working" ? "识别中…" : "识别"}
+                </Button>
+              </div>
+            </>
+          )}
+        </BottomSheet>
+      )}
     </div>
   );
 }

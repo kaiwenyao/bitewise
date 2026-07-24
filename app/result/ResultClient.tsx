@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import type { FoodItem, MealRecord } from "@/lib/types";
 import {
   PENDING_MEAL_KEY,
-  recognizePhoto,
+  recognizeMeal,
   saveMeal,
   type AiProvider,
   type PendingMeal,
@@ -29,8 +29,10 @@ export function ResultClient() {
   const [status, setStatus] = useState<Status>("loading");
   const [error, setError] = useState("");
   const [meal, setMeal] = useState<MealRecord | null>(null);
-  /** 压缩后的照片(base64),识别为空时也保留,供重试与保存 */
+  /** 压缩后的照片(base64),识别为空时也保留,供重试与保存;纯文字记餐为 null */
   const [photo, setPhoto] = useState<{ base64: string; mimeType: string } | null>(null);
+  /** 用户说明 / 纯文字描述,重试沿用 */
+  const [note, setNote] = useState("");
   /** 识别所用引擎,重试沿用 */
   const [provider, setProvider] = useState<AiProvider>("minimax");
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -47,6 +49,9 @@ export function ResultClient() {
     items: result.items.map((item) => ({ ...item, id: crypto.randomUUID() })),
   });
 
+  const emptyMessage = (hasPhoto: boolean) =>
+    hasPhoto ? "这张照片没认出食物" : "没认出食物";
+
   // 首次进入:取拍照页识别好的结果
   useEffect(() => {
     setWhen(toDateTimeInputValue(new Date()));
@@ -57,10 +62,17 @@ export function ResultClient() {
     }
     try {
       const pending = JSON.parse(raw) as PendingMeal;
-      setPhoto({ base64: pending.photoBase64, mimeType: pending.mimeType });
+      const hasPhoto =
+        typeof pending.photoBase64 === "string" && pending.photoBase64.length > 0;
+      setPhoto(
+        hasPhoto
+          ? { base64: pending.photoBase64!, mimeType: pending.mimeType || "image/jpeg" }
+          : null
+      );
+      setNote(typeof pending.note === "string" ? pending.note : "");
       setProvider(pending.provider === "openai" ? "openai" : "minimax");
       if (pending.items.length === 0) {
-        setError("这张照片没认出食物");
+        setError(emptyMessage(hasPhoto));
         setStatus("error");
         return;
       }
@@ -72,19 +84,23 @@ export function ResultClient() {
     }
   }, []);
 
-  // 对同一张照片重新识别
+  // 用同一张照片和/或文字重新识别
   const retry = useCallback(async () => {
-    if (!photo) {
+    if (!photo && !note.trim()) {
       router.push("/capture");
       return;
     }
     setStatus("loading");
     setError("");
     try {
-      const result = await recognizePhoto(photo, provider);
+      const result = await recognizeMeal({
+        image: photo,
+        note: note.trim() || undefined,
+        provider,
+      });
       if (result.items.length === 0) {
         setMeal(null);
-        setError("这张照片没认出食物");
+        setError(emptyMessage(Boolean(photo)));
         setStatus("error");
         return;
       }
@@ -96,7 +112,7 @@ export function ResultClient() {
       setStatus("error");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [photo, provider, router]);
+  }, [photo, note, provider, router]);
 
   const total = useMemo(
     () => (meal ? sumMeal(meal.items) : null),
@@ -156,6 +172,7 @@ export function ResultClient() {
         {status === "error" && (
           <ErrorState
             message={error}
+            hasPhoto={Boolean(photo)}
             onRetry={retry}
             onCapture={() => router.push("/capture")}
           />
@@ -291,7 +308,7 @@ function PhotoBlock({
         className="absolute right-3 top-3 flex h-11 items-center gap-1.5 border-[3px] border-paper bg-black px-4 font-mono text-label uppercase text-paper transition-colors duration-fast hover:bg-paper hover:text-black"
       >
         <CameraIcon width={18} height={18} />
-        重拍
+        {src ? "重拍" : "重记"}
       </button>
     </div>
   );
@@ -321,7 +338,7 @@ function LoadingState() {
   );
 }
 
-/* ---------- 没有照片:引导去拍 ---------- */
+/* ---------- 没有待识别结果:引导去拍或写 ---------- */
 
 function EmptyState({ onCapture }: { onCapture: () => void }) {
   return (
@@ -330,13 +347,13 @@ function EmptyState({ onCapture }: { onCapture: () => void }) {
         <PlateIcon width={28} height={28} />
       </div>
       <h2 className="mt-5 font-display text-headline-md uppercase">
-        还没有照片
+        还没有记录
       </h2>
       <p className="mt-2 max-w-[260px] text-body-md text-ink-muted">
-        先给这餐拍一张,AI 会帮你数出每种食物和热量。
+        拍一张或写几句描述,AI 会帮你估出食物和热量。
       </p>
       <div className="mt-8 w-full">
-        <Button onClick={onCapture}>去拍照</Button>
+        <Button onClick={onCapture}>去记录</Button>
       </div>
     </div>
   );
@@ -346,10 +363,12 @@ function EmptyState({ onCapture }: { onCapture: () => void }) {
 
 function ErrorState({
   message,
+  hasPhoto,
   onRetry,
   onCapture,
 }: {
   message: string;
+  hasPhoto: boolean;
   onRetry: () => void;
   onCapture: () => void;
 }) {
@@ -359,14 +378,18 @@ function ErrorState({
         <PlateIcon width={28} height={28} />
       </div>
       <h2 className="mt-5 font-display text-headline-md uppercase">
-        {message || "这张照片没认出食物"}
+        {message || (hasPhoto ? "这张照片没认出食物" : "没认出食物")}
       </h2>
       <p className="mt-2 max-w-[260px] text-body-md text-ink-muted">
-        可能是光线太暗,或者角度有点刁钻。换一张清晰点的试试。
+        {hasPhoto
+          ? "可能是光线太暗,或者角度有点刁钻。换一张清晰点的试试。"
+          : "试着写具体一点,比如「一杯美式咖啡」或「一根香蕉」。"}
       </p>
       <div className="mt-8 w-full space-y-3">
         <Button onClick={onRetry}>重试识别</Button>
-        <Button variant="ghost" onClick={onCapture}>重新拍照</Button>
+        <Button variant="ghost" onClick={onCapture}>
+          {hasPhoto ? "重新拍照" : "重新记录"}
+        </Button>
       </div>
     </div>
   );
