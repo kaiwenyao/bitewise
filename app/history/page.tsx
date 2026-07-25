@@ -150,7 +150,7 @@ export default function HistoryPage() {
                             EST. CAL
                           </span>
                           <span className="font-display text-headline-md leading-none">
-                            {entry.kcal.low} – {entry.kcal.high}
+                            {entry.kcal}
                           </span>
                         </div>
                       </div>

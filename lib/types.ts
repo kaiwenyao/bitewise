@@ -29,7 +29,8 @@ export interface HistoryEntry {
   name: string;
   /** ISO 时间(UTC 存储);展示时由浏览器转本地 */
   createdAt: string;
-  kcal: { low: number; high: number };
+  /** 估计热量(单一 kcal,取 mid) */
+  kcal: number;
   /** Supabase Storage 中的照片地址;未拍照的记录为 null */
   photoUrl: string | null;
 }

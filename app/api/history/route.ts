@@ -13,8 +13,7 @@ interface MealRow {
   photo_url: string | null;
   food_items: {
     name: string;
-    kcal_low: number;
-    kcal_high: number;
+    kcal_mid: number;
     position: number;
   }[];
 }
@@ -36,7 +35,7 @@ export async function GET(req: Request) {
 
     const { data, error } = await supabase
       .from("meals")
-      .select("id, created_at, photo_url, food_items(name, kcal_low, kcal_high, position)")
+      .select("id, created_at, photo_url, food_items(name, kcal_mid, position)")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .range(offset, offset + PAGE_SIZE); // 多取一条判断 hasMore
@@ -54,10 +53,7 @@ export async function GET(req: Request) {
             ? `${items[0].name} 等 ${items.length} 项`
             : items[0]?.name ?? "未命名",
         createdAt: meal.created_at,
-        kcal: {
-          low: items.reduce((s, i) => s + i.kcal_low, 0),
-          high: items.reduce((s, i) => s + i.kcal_high, 0),
-        },
+        kcal: items.reduce((s, i) => s + i.kcal_mid, 0),
         photoUrl: meal.photo_url,
       };
     });
