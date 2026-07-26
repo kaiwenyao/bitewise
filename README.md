@@ -31,7 +31,8 @@ pnpm dev
 - `middleware.ts` 保护所有页面和 `/api/*`:未登录访问页面跳 `/login`,访问 API 返回 401;已登录访问 `/login` 跳回 `/capture`
 - 数据按用户隔离:`meals.user_id` 记录归属,保存时取会话用户写入,历史页按 `user_id` 过滤(服务端用 sb_secret 查询,所以**必须**在代码里过滤,不能省)
 - 默认用户:`pnpm db:seed` 创建 `admin / 123456`(幂等)。**上线前务必改密码**——目前只能去 Supabase Dashboard → Authentication → Users 里改,或再建新用户
-- 新增用户:Dashboard → Authentication → Users → Add user,邮箱填 `新名字@bitewise.local`
+- 自助注册:在 `.env.local` 设置 `ALLOW_REGISTRATION=true` 后,登录页会显示「没有账号？注册」入口。注册只需要用户名和密码,创建后直接登录,不发送验证邮件。未设置或设为其他值时注册入口和服务端注册接口都会关闭
+- 管理员新增用户:也可在 Supabase Dashboard → Authentication → Users → Add user,邮箱填 `新名字@bitewise.local`
 
 ---
 
