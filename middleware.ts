@@ -32,9 +32,10 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
   const { pathname } = request.nextUrl;
+  const isRegistrationEndpoint = pathname === "/api/auth/register";
 
   if (pathname.startsWith("/api/")) {
-    if (!user) {
+    if (!user && !isRegistrationEndpoint) {
       return NextResponse.json({ error: "未登录" }, { status: 401 });
     }
     return response;
