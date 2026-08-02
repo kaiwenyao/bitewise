@@ -77,7 +77,7 @@ export default function HistoryPage() {
             {[0, 1, 2].map((i) => (
               <div
                 key={i}
-                className="h-28 animate-[pulse-soft_1.8s_ease-in-out_infinite] border-[3px] border-black bg-black"
+                className="h-[72px] animate-[pulse-soft_1.8s_ease-in-out_infinite] border-[3px] border-black bg-black"
               />
             ))}
           </div>
@@ -118,13 +118,13 @@ export default function HistoryPage() {
                     <Link
                       key={entry.id}
                       href={`/history/${entry.id}`}
-                      className={`group flex cursor-pointer flex-col transition-colors duration-fast hover:bg-black hover:text-paper sm:flex-row ${
+                      className={`group flex cursor-pointer flex-row transition-colors duration-fast hover:bg-black hover:text-paper ${
                         entryIndex < day.entries.length - 1
                           ? "border-b-[3px] border-black"
                           : ""
                       }`}
                     >
-                      <div className="flex h-[120px] w-full shrink-0 items-center justify-center overflow-hidden border-b-[3px] border-black bg-black text-paper/40 sm:w-[120px] sm:border-b-0 sm:border-r-[3px]">
+                      <div className="flex h-[72px] w-[72px] shrink-0 items-center justify-center overflow-hidden border-r-[3px] border-black bg-black text-paper/40">
                         {entry.photoUrl ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
@@ -133,23 +133,23 @@ export default function HistoryPage() {
                             className="h-full w-full object-cover"
                           />
                         ) : (
-                          <PlateIcon width={40} height={40} strokeWidth={1.2} />
+                          <PlateIcon width={24} height={24} strokeWidth={1.2} />
                         )}
                       </div>
-                      <div className="flex flex-grow flex-col justify-between p-4">
-                        <div className="mb-2 flex items-start justify-between gap-2">
-                          <h3 className="min-w-0 flex-1 truncate font-display text-headline-md uppercase leading-tight">
+                      <div className="flex flex-grow flex-col justify-between px-3 py-2">
+                        <div className="mb-1 flex items-start justify-between gap-2">
+                          <h3 className="min-w-0 flex-1 truncate font-display text-body-lg uppercase leading-tight">
                             {entry.name}
                           </h3>
                           <span className="shrink-0 border border-black bg-paper px-2 py-1 font-mono text-data group-hover:border-paper group-hover:text-black">
                             {timeLabel(new Date(entry.createdAt))}
                           </span>
                         </div>
-                        <div className="mt-4 flex items-end justify-between">
+                        <div className="mt-1 flex items-end justify-between">
                           <span className="font-mono text-data uppercase text-ink-muted group-hover:text-paper/70">
                             EST. CAL
                           </span>
-                          <span className="font-display text-headline-md leading-none">
+                          <span className="font-display text-body-lg leading-none">
                             {entry.kcal}
                           </span>
                         </div>
