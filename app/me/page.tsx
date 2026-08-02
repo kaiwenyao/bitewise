@@ -1,5 +1,6 @@
 import { AppHeader } from "@/components/AppHeader";
 import { TabBar } from "@/components/TabBar";
+import { ChangePasswordForm } from "@/components/ChangePasswordForm";
 import { SignOutButton } from "@/components/SignOutButton";
 import { MeMetrics } from "@/components/MeMetrics";
 import { getSessionUser } from "@/lib/supabase-session";
@@ -72,6 +73,7 @@ export default async function MePage() {
               SYSTEM CONFIG
             </h3>
           </div>
+          <ChangePasswordForm />
           <SignOutButton />
         </section>
       </main>
