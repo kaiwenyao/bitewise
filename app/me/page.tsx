@@ -38,8 +38,8 @@ export default async function MePage() {
         </div>
 
         {/* 用户信息 + 每日目标 + 热力图 */}
-        <div className="grid grid-cols-1 border-x-[3px] border-b-[3px] border-black">
-          <section className="group border-b-[3px] border-black p-6">
+        <div className="grid grid-cols-1 border-x-thick border-b-thick border-black">
+          <section className="group border-b-thick border-black p-6">
             <div className="mb-6 flex w-full items-center justify-between">
               <span className="bg-black px-2 py-1 font-mono text-label uppercase tracking-widest text-paper">
                 USER_DATA
@@ -67,8 +67,8 @@ export default async function MePage() {
         </div>
 
         {/* 系统设置 */}
-        <section className="border-[3px] border-t-0 border-black">
-          <div className="border-b-[3px] border-black bg-black p-4 text-paper">
+        <section className="border-thick border-t-0 border-black">
+          <div className="border-b-thick border-black bg-black p-4 text-paper">
             <h3 className="font-display text-headline-md uppercase">
               SYSTEM CONFIG
             </h3>

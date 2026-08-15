@@ -26,7 +26,7 @@ function formatTimeDisplay(time: string): string {
 }
 
 const shellCls =
-  "relative flex h-12 w-full items-center justify-between border-[3px] border-black bg-paper px-3 focus-within:bg-black focus-within:text-paper";
+  "relative flex h-12 w-full items-center justify-between border-thick border-black bg-paper px-3 focus-within:bg-black focus-within:text-paper";
 
 /**
  * 日期 + 时间选择器。

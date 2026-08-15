@@ -46,7 +46,7 @@ export default function RootLayout({
     >
       <body className="font-body">
         {/* 桌面访问时收窄为手机宽度,移动端全宽 */}
-        <div className="mx-auto flex min-h-dvh w-full max-w-[430px] flex-col bg-paper md:border-x-[3px] md:border-black">
+        <div className="mx-auto flex min-h-dvh w-full max-w-[430px] flex-col bg-paper md:border-x-thick md:border-black">
           {children}
         </div>
       </body>

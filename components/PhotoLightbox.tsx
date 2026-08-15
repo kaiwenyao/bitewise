@@ -45,7 +45,7 @@ export function PhotoLightbox({
         type="button"
         onClick={onClose}
         aria-label="关闭大图"
-        className="absolute right-4 top-4 z-20 flex h-11 w-11 items-center justify-center border-[3px] border-paper bg-black text-paper transition-colors duration-fast hover:bg-paper hover:text-black"
+        className="absolute right-4 top-4 z-20 flex h-11 w-11 items-center justify-center border-thick border-paper bg-black text-paper transition-colors duration-fast hover:bg-paper hover:text-black"
       >
         <span className="material-symbols-outlined text-[22px]">close</span>
       </button>

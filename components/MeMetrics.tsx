@@ -59,7 +59,7 @@ export function MeMetrics() {
 
   return (
     <>
-      <section className="group border-b-[3px] border-black p-6">
+      <section className="group border-b-thick border-black p-6">
         <div className="mb-6 flex w-full items-center justify-between">
           <span className="bg-terracotta px-2 py-1 font-mono text-label uppercase tracking-widest text-paper">
             METRICS_TARGET
@@ -105,14 +105,14 @@ export function MeMetrics() {
               <button
                 type="button"
                 onClick={() => setEditing(true)}
-                className="shrink-0 border-[3px] border-black bg-paper px-3 py-2 font-mono text-label uppercase shadow-hard transition-all duration-fast hover:bg-black hover:text-paper active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
+                className="shrink-0 border-thick border-black bg-paper px-3 py-2 font-mono text-label uppercase shadow-hard transition-all duration-fast hover:bg-black hover:text-paper active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
               >
                 编辑
               </button>
             </div>
 
             {/* 今日进度:相对目标;超标时条满并标 OVER */}
-            <div className="mt-4 flex h-8 w-full overflow-hidden border-[3px] border-black">
+            <div className="mt-4 flex h-8 w-full overflow-hidden border-thick border-black">
               <div
                 className="h-full bg-black transition-[width] duration-300"
                 style={{ width: `${pct}%` }}

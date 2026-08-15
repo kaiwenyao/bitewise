@@ -18,7 +18,7 @@ export function TabBar() {
   const pathname = usePathname();
 
   return (
-    <nav className="sticky bottom-0 z-40 border-t-[3px] border-black bg-paper pb-[env(safe-area-inset-bottom)]">
+    <nav className="sticky bottom-0 z-40 border-t-thick border-black bg-paper pb-[env(safe-area-inset-bottom)]">
       <div className="grid h-20 grid-cols-3">
         {tabs.map(({ key, href, label, icon }) => {
           const active =
@@ -29,7 +29,7 @@ export function TabBar() {
               key={key}
               href={href}
               aria-current={active ? "page" : undefined}
-              className={`flex h-full flex-col items-center justify-center gap-1 border-l-[3px] border-black transition-colors duration-fast first:border-l-0 ${
+              className={`flex h-full flex-col items-center justify-center gap-1 border-l-thick border-black transition-colors duration-fast first:border-l-0 ${
                 active
                   ? "bg-black text-paper"
                   : "bg-paper text-ink hover:bg-black hover:text-paper"

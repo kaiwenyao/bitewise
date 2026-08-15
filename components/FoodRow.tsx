@@ -13,7 +13,7 @@ export function FoodRow({ item, onEdit }: FoodRowProps) {
     <li>
       <button
         onClick={() => onEdit(item)}
-        className="group flex min-h-[72px] w-full items-center gap-3 border-b-[3px] border-black px-4 py-3 text-left transition-colors duration-fast hover:bg-black hover:text-paper"
+        className="group flex min-h-[72px] w-full items-center gap-3 border-b-thick border-black px-4 py-3 text-left transition-colors duration-fast hover:bg-black hover:text-paper"
       >
         <div className="min-w-0 flex-1">
           <p className="truncate text-body-lg">{item.name}</p>

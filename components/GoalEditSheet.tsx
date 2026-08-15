@@ -64,7 +64,7 @@ export function GoalEditSheet({
             step={50}
             value={value}
             onChange={(e) => setValue(e.target.value)}
-            className="mt-2 h-12 w-full border-[3px] border-black bg-paper px-4 font-display text-headline-md outline-none focus:bg-black focus:text-paper"
+            className="mt-2 h-12 w-full border-thick border-black bg-paper px-4 font-display text-headline-md outline-none focus:bg-black focus:text-paper"
           />
           <p className="mt-2 font-mono text-data uppercase text-ink-faint">
             范围 {MIN_GOAL}–{MAX_GOAL}

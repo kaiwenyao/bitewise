@@ -20,7 +20,7 @@ export function TotalCard({ total, animate }: TotalCardProps) {
   const high = useCountUp(roundKcal(total.high), animate);
 
   return (
-    <section className="border-[3px] border-black bg-paper p-6 shadow-hard">
+    <section className="border-thick border-black bg-paper p-6 shadow-hard">
       <p className="font-mono text-label uppercase text-ink-muted">
         TOTAL_EST // 合计(估算)
       </p>
@@ -28,7 +28,7 @@ export function TotalCard({ total, animate }: TotalCardProps) {
         {mid}
         <span className="font-body text-body-lg text-ink-muted"> kcal</span>
       </p>
-      <p className="mt-4 break-words border-t-[3px] border-black pt-3 font-mono text-data uppercase text-ink-muted">
+      <p className="mt-4 break-words border-t-thick border-black pt-3 font-mono text-data uppercase text-ink-muted">
         区间 {low}–{high} kcal · 点任意食物可修正
       </p>
     </section>

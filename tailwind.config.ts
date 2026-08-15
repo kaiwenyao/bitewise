@@ -2,7 +2,7 @@ import type { Config } from "tailwindcss";
 
 /**
  * Bitewise 设计系统基准(Neo-Brutalism)
- * - 配色:纸白底 #F4F1E8 + 纯黑墨,3px 黑色描边,无圆角
+ * - 配色:纸白底 #F4F1E8 + 纯黑墨,3px 黑色描边(thick),无圆角
  * - 字体:Anton(展示)/ Space Mono(标签与数据)/ Archivo Narrow(正文)
  * - 间距:Tailwind 默认 4px 网格,页面左右留白 24px
  */
@@ -10,6 +10,9 @@ export default {
   content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}"],
   theme: {
     extend: {
+      borderWidth: {
+        thick: "3px",
+      },
       colors: {
         paper: "#F4F1E8",
         ink: {
@@ -39,9 +42,6 @@ export default {
           { lineHeight: "14px", letterSpacing: "0.05em", fontWeight: "700" },
         ],
         label: ["12px", { lineHeight: "12px", fontWeight: "700" }],
-      },
-      spacing: {
-        gutter: "24px",
       },
       boxShadow: {
         hard: "4px 4px 0px 0px #000000",

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { getSupabaseBrowser } from "@/lib/supabase-browser";
+import { Button } from "./ui/Button";
 
 const MIN_PASSWORD_LENGTH = 6;
 
@@ -92,7 +93,7 @@ export function ChangePasswordForm() {
   };
 
   return (
-    <div className="border-b-[3px] border-black">
+    <div className="border-b-thick border-black">
       <button
         type="button"
         onClick={toggle}
@@ -129,7 +130,7 @@ export function ChangePasswordForm() {
       </button>
 
       {open && (
-        <form onSubmit={submit} className="border-t-[3px] border-black px-6 pb-6">
+        <form onSubmit={submit} className="border-t-thick border-black px-6 pb-6">
           <label
             htmlFor="current-password"
             className="mt-5 block font-mono text-label uppercase text-ink-muted"
@@ -143,7 +144,7 @@ export function ChangePasswordForm() {
             onChange={(e) => setCurrentPassword(e.target.value)}
             autoComplete="current-password"
             required
-            className="mt-2 h-12 w-full border-[3px] border-black bg-paper px-4 text-body-lg outline-none focus:bg-black focus:text-paper"
+            className="mt-2 h-12 w-full border-thick border-black bg-paper px-4 text-body-lg outline-none focus:bg-black focus:text-paper"
           />
 
           <label
@@ -160,7 +161,7 @@ export function ChangePasswordForm() {
             autoComplete="new-password"
             required
             minLength={MIN_PASSWORD_LENGTH}
-            className="mt-2 h-12 w-full border-[3px] border-black bg-paper px-4 text-body-lg outline-none focus:bg-black focus:text-paper"
+            className="mt-2 h-12 w-full border-thick border-black bg-paper px-4 text-body-lg outline-none focus:bg-black focus:text-paper"
           />
 
           <label
@@ -177,25 +178,21 @@ export function ChangePasswordForm() {
             autoComplete="new-password"
             required
             minLength={MIN_PASSWORD_LENGTH}
-            className="mt-2 h-12 w-full border-[3px] border-black bg-paper px-4 text-body-lg outline-none focus:bg-black focus:text-paper"
+            className="mt-2 h-12 w-full border-thick border-black bg-paper px-4 text-body-lg outline-none focus:bg-black focus:text-paper"
           />
 
           {error && (
             <p
               role="alert"
-              className="mt-4 border-[3px] border-black bg-terracotta px-3 py-2 text-center font-mono text-label uppercase text-paper"
+              className="mt-4 border-thick border-black bg-terracotta px-3 py-2 text-center font-mono text-label uppercase text-paper"
             >
               {error}
             </p>
           )}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="mt-6 flex h-14 w-full items-center justify-center border-[3px] border-black bg-black font-mono text-data uppercase text-paper shadow-hard transition-all duration-fast hover:bg-paper hover:text-black active:translate-x-[4px] active:translate-y-[4px] active:shadow-none disabled:opacity-40"
-          >
+          <Button type="submit" disabled={loading} className="mt-6">
             {loading ? "修改中…" : "确认修改"}
-          </button>
+          </Button>
         </form>
       )}
     </div>
