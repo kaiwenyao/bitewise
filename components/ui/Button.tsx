@@ -10,10 +10,10 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 const styles: Record<ButtonVariant, string> = {
   // 主按钮:黑底纸字,hover 反色,硬阴影按压下沉
   primary:
-    "border-[3px] border-black bg-black text-paper shadow-hard hover:bg-paper hover:text-black active:translate-x-[4px] active:translate-y-[4px] active:shadow-none",
+    "border-thick border-black bg-black text-paper shadow-hard hover:bg-paper hover:text-black active:translate-x-[4px] active:translate-y-[4px] active:shadow-none",
   // 次按钮:纸底描边
   ghost:
-    "border-[3px] border-black bg-paper text-ink shadow-hard hover:bg-black hover:text-paper active:translate-x-[4px] active:translate-y-[4px] active:shadow-none",
+    "border-thick border-black bg-paper text-ink shadow-hard hover:bg-black hover:text-paper active:translate-x-[4px] active:translate-y-[4px] active:shadow-none",
   // 文字按钮:最小干预
   quiet: "bg-transparent text-ink-muted hover:text-ink",
 };

@@ -10,7 +10,7 @@ interface ScreenHeaderProps {
 /** 页面顶栏:返回 + 标题 + 关闭,全部为 44px 触控目标 */
 export function ScreenHeader({ title, onBack, onClose }: ScreenHeaderProps) {
   return (
-    <header className="sticky top-0 z-40 flex h-16 shrink-0 items-center justify-between border-b-[3px] border-black bg-paper px-3">
+    <header className="sticky top-0 z-40 flex min-h-16 shrink-0 items-center justify-between border-b-thick border-black bg-paper px-3 pt-[env(safe-area-inset-top)]">
       <HeaderButton label="返回" onClick={onBack}>
         <ChevronLeftIcon />
       </HeaderButton>

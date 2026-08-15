@@ -63,7 +63,7 @@ export default function HistoryPage() {
 
       <main className="flex-1 px-4 py-6">
         {/* 页头 */}
-        <div className="mb-6 border-b-[3px] border-black pb-6">
+        <div className="mb-6 border-b-thick border-black pb-6">
           <h1 className="font-display text-display-mobile uppercase leading-none">
             HISTORY
           </h1>
@@ -77,14 +77,14 @@ export default function HistoryPage() {
             {[0, 1, 2].map((i) => (
               <div
                 key={i}
-                className="h-[72px] animate-[pulse-soft_1.8s_ease-in-out_infinite] border-[3px] border-black bg-black"
+                className="h-[72px] animate-[pulse-soft_1.8s_ease-in-out_infinite] border-thick border-black bg-black"
               />
             ))}
           </div>
         )}
 
         {status === "error" && (
-          <div className="border-[3px] border-black p-6 text-center">
+          <div className="border-thick border-black p-6 text-center">
             <p className="font-display text-headline-md uppercase">{error}</p>
             <p className="mt-2 font-mono text-data uppercase text-ink-muted">
               检查网络后刷新重试
@@ -93,7 +93,7 @@ export default function HistoryPage() {
         )}
 
         {status === "ready" && days.length === 0 && (
-          <div className="border-[3px] border-black p-6 text-center">
+          <div className="border-thick border-black p-6 text-center">
             <p className="font-display text-headline-md uppercase">暂无记录</p>
             <p className="mt-2 font-mono text-data uppercase text-ink-muted">
               拍一张照片,记下第一餐
@@ -103,13 +103,13 @@ export default function HistoryPage() {
 
         {status === "ready" && days.length > 0 && (
           <>
-            <div className="border-[3px] border-black">
+            <div className="border-thick border-black">
               {days.map((day, dayIndex) => (
                 <section
                   key={day.label}
-                  className={dayIndex > 0 ? "border-t-[3px] border-black" : ""}
+                  className={dayIndex > 0 ? "border-t-thick border-black" : ""}
                 >
-                  <div className="border-b-[3px] border-black bg-black p-4 text-paper">
+                  <div className="border-b-thick border-black bg-black p-4 text-paper">
                     <h2 className="font-display text-headline-md uppercase">
                       {day.label}
                     </h2>
@@ -120,11 +120,11 @@ export default function HistoryPage() {
                       href={`/history/${entry.id}`}
                       className={`group flex cursor-pointer flex-row transition-colors duration-fast hover:bg-black hover:text-paper ${
                         entryIndex < day.entries.length - 1
-                          ? "border-b-[3px] border-black"
+                          ? "border-b-thick border-black"
                           : ""
                       }`}
                     >
-                      <div className="flex h-[72px] w-[72px] shrink-0 items-center justify-center overflow-hidden border-r-[3px] border-black bg-black text-paper/40">
+                      <div className="flex h-[72px] w-[72px] shrink-0 items-center justify-center overflow-hidden border-r-thick border-black bg-black text-paper/40">
                         {entry.photoUrl ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
@@ -164,7 +164,7 @@ export default function HistoryPage() {
               <button
                 onClick={loadMore}
                 disabled={loadingMore}
-                className="mt-8 w-full border-[3px] border-black bg-paper py-6 font-display text-headline-md uppercase transition-colors duration-fast hover:bg-black hover:text-paper active:translate-y-1 disabled:opacity-40"
+                className="mt-8 w-full border-thick border-black bg-paper py-6 font-display text-headline-md uppercase transition-colors duration-fast hover:bg-black hover:text-paper active:translate-y-1 disabled:opacity-40"
               >
                 {loadingMore ? "加载中…" : "加载更多"}
               </button>

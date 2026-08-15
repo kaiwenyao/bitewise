@@ -59,7 +59,7 @@ export function EditSheet({ item, onSave, onRemove, onClose }: EditSheetProps) {
             id="food-name"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="mt-2 h-12 w-full border-[3px] border-black bg-paper px-4 text-body-lg outline-none focus:bg-black focus:text-paper"
+            className="mt-2 h-12 w-full border-thick border-black bg-paper px-4 text-body-lg outline-none focus:bg-black focus:text-paper"
           />
 
           <Stepper
@@ -140,7 +140,7 @@ function StepButton({
     <button
       aria-label={label}
       onClick={onClick}
-      className="flex h-11 w-11 shrink-0 items-center justify-center border-[3px] border-black bg-paper text-ink shadow-hard transition-all duration-fast hover:bg-black hover:text-paper active:translate-x-[4px] active:translate-y-[4px] active:shadow-none"
+      className="flex h-11 w-11 shrink-0 items-center justify-center border-thick border-black bg-paper text-ink shadow-hard transition-all duration-fast hover:bg-black hover:text-paper active:translate-x-[4px] active:translate-y-[4px] active:shadow-none"
     >
       {children}
     </button>

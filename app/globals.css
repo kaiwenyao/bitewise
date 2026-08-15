@@ -24,6 +24,16 @@ body {
 }
 
 /*
+ * 全局键盘焦点:只对键盘导航(:focus-visible)生效,鼠标点击不触发。
+ * neo-brutalism 风格用虚线 + offset,与硬描边视觉一致;
+ * 输入框自带反色反馈且写了 outline-none,此处不覆盖。
+ */
+:focus-visible {
+  outline: 2px dashed #1b1b1b;
+  outline-offset: 2px;
+}
+
+/*
  * DateTimeField:透明原生 date/time 铺满自定义壳。
  * iOS 仍会用系统本地化格式画控件文案,无法靠 CSS 统一 → 隐藏原生外观,
  * 由可见层自绘「DD / MM / YYYY」「HH : MM」;16px 防止 iOS 聚焦缩放。

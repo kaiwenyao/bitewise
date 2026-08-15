@@ -45,7 +45,7 @@ export function BottomSheet({ onClose, ariaLabel, children }: BottomSheetProps) 
       />
       {/* 抽屉 */}
       <div
-        className={`absolute inset-x-0 bottom-0 mx-auto w-full max-w-[430px] border-t-[3px] border-black bg-paper px-6 pb-8 pt-6 ${
+        className={`absolute inset-x-0 bottom-0 mx-auto w-full max-w-[430px] border-t-thick border-black bg-paper px-6 pb-8 pt-6 ${
           closing
             ? "animate-[sheet-out_220ms_ease-in_forwards]"
             : "animate-[sheet-in_250ms_ease-out]"

@@ -131,7 +131,7 @@ export default function MealDetailPage() {
       <main className="flex-1 px-6 pb-6 pt-4">
         {status === "loading" && (
           <div aria-busy="true">
-            <div className="aspect-[4/3] animate-[pulse-soft_1.8s_ease-in-out_infinite] border-[3px] border-black bg-black" />
+            <div className="aspect-[4/3] animate-[pulse-soft_1.8s_ease-in-out_infinite] border-thick border-black bg-black" />
             <div className="mt-6 space-y-4">
               {[0, 1, 2].map((i) => (
                 <div key={i} className="flex items-center justify-between">
@@ -145,7 +145,7 @@ export default function MealDetailPage() {
 
         {status === "error" && (
           <div className="flex flex-col items-center pt-16 text-center">
-            <div className="flex h-16 w-16 items-center justify-center border-[3px] border-black text-ink">
+            <div className="flex h-16 w-16 items-center justify-center border-thick border-black text-ink">
               <PlateIcon width={28} height={28} />
             </div>
             <h2 className="mt-5 font-display text-headline-md uppercase">
@@ -156,7 +156,7 @@ export default function MealDetailPage() {
 
         {status === "ready" && meal && (
           <div className="animate-[rise-in_250ms_ease-out]">
-            <div className="relative aspect-[4/3] overflow-hidden border-[3px] border-black bg-black">
+            <div className="relative aspect-[4/3] overflow-hidden border-thick border-black bg-black">
               {meal.photoUrl ? (
                 <button
                   type="button"
@@ -176,7 +176,7 @@ export default function MealDetailPage() {
                   <PlateIcon width={64} height={64} strokeWidth={1.2} />
                 </div>
               )}
-              <span className="pointer-events-none absolute left-3 top-3 border-[3px] border-paper bg-black px-3 py-1.5 font-mono text-label uppercase text-paper">
+              <span className="pointer-events-none absolute left-3 top-3 border-thick border-paper bg-black px-3 py-1.5 font-mono text-label uppercase text-paper">
                 {items.length} 项食物
               </span>
             </div>
@@ -197,7 +197,7 @@ export default function MealDetailPage() {
             </div>
 
             {/* 明细:点行修改,完成即落库 */}
-            <ul className="mt-4 border-t-[3px] border-black">
+            <ul className="mt-4 border-t-thick border-black">
               {items.map((item) => (
                 <FoodRow
                   key={item.id}
@@ -221,7 +221,7 @@ export default function MealDetailPage() {
             <button
               onClick={handleDelete}
               disabled={deleting || saving}
-              className={`mt-6 flex min-h-14 w-full items-center justify-center border-[3px] border-black px-3 py-3 text-center font-mono text-data uppercase leading-tight transition-all duration-fast disabled:opacity-40 ${
+              className={`mt-6 flex min-h-14 w-full items-center justify-center border-thick border-black px-3 py-3 text-center font-mono text-data uppercase leading-tight transition-all duration-fast disabled:opacity-40 ${
                 confirming
                   ? "bg-terracotta text-paper shadow-hard hover:bg-black active:translate-x-[4px] active:translate-y-[4px] active:shadow-none"
                   : "bg-paper text-ink-muted hover:text-terracotta"
@@ -234,7 +234,7 @@ export default function MealDetailPage() {
                   : "删除这条记录"}
             </button>
             {actionError && (
-              <p className="mt-3 border-[3px] border-black bg-terracotta px-4 py-3 text-center font-mono text-data uppercase text-paper">
+              <p className="mt-3 border-thick border-black bg-terracotta px-4 py-3 text-center font-mono text-data uppercase text-paper">
                 {actionError}
               </p>
             )}

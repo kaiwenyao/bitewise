@@ -216,7 +216,7 @@ export default function CapturePage() {
       <input ref={shutterInput} capture="environment" {...inputProps} />
       <input ref={galleryInput} {...inputProps} />
 
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b-[3px] border-black px-6 py-2">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b-thick border-black px-6 pb-2 pt-[calc(0.5rem+env(safe-area-inset-top))]">
         <span className="flex min-w-0 items-center gap-2 font-mono text-label uppercase">
           <span className="h-2 w-2 shrink-0 animate-pulse bg-black" />
           MODE: {status === "working" ? "RUNNING" : "ACTIVE"}
@@ -244,7 +244,7 @@ export default function CapturePage() {
         </div>
       </div>
 
-      <header className="flex items-center justify-between border-b-[3px] border-black px-6 py-4">
+      <header className="flex items-center justify-between border-b-thick border-black px-6 py-4">
         <span
           className="material-symbols-outlined text-[28px]"
           style={{ fontVariationSettings: "'FILL' 1" }}
@@ -252,12 +252,12 @@ export default function CapturePage() {
           fingerprint
         </span>
         <h1 className="font-display text-headline-lg uppercase">BITEWISE</h1>
-        <div className="border-[3px] border-black px-3 py-1 font-mono text-data">
+        <div className="border-thick border-black px-3 py-1 font-mono text-data">
           ID-8822
         </div>
       </header>
 
-      <main className="relative flex flex-1 flex-col items-center justify-center overflow-hidden border-b-[3px] border-black bg-black">
+      <main className="relative flex flex-1 flex-col items-center justify-center overflow-hidden border-b-thick border-black bg-black">
         <video
           ref={videoRef}
           autoPlay
@@ -274,7 +274,7 @@ export default function CapturePage() {
             type="button"
             onClick={toggleFlash}
             aria-label="闪光灯"
-            className={`absolute right-4 top-4 z-30 flex h-11 w-11 items-center justify-center border-[3px] border-paper transition-colors duration-fast ${
+            className={`absolute right-4 top-4 z-30 flex h-11 w-11 items-center justify-center border-thick border-paper transition-colors duration-fast ${
               flashActive ? "bg-paper text-black" : "bg-black text-paper hover:bg-paper hover:text-black"
             }`}
           >
@@ -304,14 +304,14 @@ export default function CapturePage() {
         <div className="pointer-events-none absolute left-0 top-0 z-20 h-2 w-full animate-[scan_3s_ease-in-out_infinite] bg-gradient-to-b from-transparent via-paper/50 to-transparent" />
 
         {camState === "pending" && (
-          <div className="absolute inset-x-6 bottom-6 z-30 border-[3px] border-paper bg-black px-4 py-3 text-center font-mono text-data uppercase text-paper">
+          <div className="absolute inset-x-6 bottom-6 z-30 border-thick border-paper bg-black px-4 py-3 text-center font-mono text-data uppercase text-paper">
             请求相机权限中…
           </div>
         )}
         {(camState === "denied" ||
           camState === "unsupported" ||
           camState === "error") && (
-          <div className="absolute inset-x-6 bottom-6 z-30 border-[3px] border-paper bg-black px-4 py-3 text-center font-mono text-data uppercase text-paper">
+          <div className="absolute inset-x-6 bottom-6 z-30 border-thick border-paper bg-black px-4 py-3 text-center font-mono text-data uppercase text-paper">
             {camState === "denied"
               ? "相机权限被拒,快门将打开系统相机"
               : camState === "unsupported"
@@ -320,19 +320,19 @@ export default function CapturePage() {
           </div>
         )}
         {status === "working" && (
-          <div className="absolute inset-x-6 bottom-6 z-30 border-[3px] border-paper bg-black px-4 py-3 text-center font-mono text-data uppercase text-paper">
+          <div className="absolute inset-x-6 bottom-6 z-30 border-thick border-paper bg-black px-4 py-3 text-center font-mono text-data uppercase text-paper">
             识别中,通常几秒…
           </div>
         )}
         {status === "error" && (
-          <div className="absolute inset-x-6 bottom-6 z-30 border-[3px] border-paper bg-terracotta px-4 py-3 text-center font-mono text-data uppercase text-paper">
+          <div className="absolute inset-x-6 bottom-6 z-30 border-thick border-paper bg-terracotta px-4 py-3 text-center font-mono text-data uppercase text-paper">
             {error}
           </div>
         )}
       </main>
 
       {/* 拍照时可选补充说明 */}
-      <div className="border-b-[3px] border-black bg-paper px-4 py-2">
+      <div className="border-b-thick border-black bg-paper px-4 py-2">
         <label htmlFor="photo-caption" className="sr-only">
           补充说明
         </label>
@@ -344,16 +344,16 @@ export default function CapturePage() {
           disabled={status === "working"}
           onChange={(e) => setCaption(e.target.value)}
           placeholder="补充说明（可选），如：少油 / 半份"
-          className="h-11 w-full border-[3px] border-black bg-paper px-3 font-mono text-data outline-none placeholder:text-ink-faint focus:bg-black focus:text-paper disabled:opacity-40"
+          className="h-11 w-full border-thick border-black bg-paper px-3 font-mono text-data outline-none placeholder:text-ink-faint focus:bg-black focus:text-paper disabled:opacity-40"
         />
       </div>
 
-      <div className="grid h-32 w-full shrink-0 grid-cols-3 border-b-[3px] border-black bg-paper">
+      <div className="grid h-32 w-full shrink-0 grid-cols-3 border-b-thick border-black bg-paper">
         <button
           type="button"
           onClick={() => galleryInput.current?.click()}
           disabled={status === "working"}
-          className="group flex items-center justify-center border-r-[3px] border-black transition-colors duration-fast hover:bg-black disabled:opacity-40"
+          className="group flex items-center justify-center border-r-thick border-black transition-colors duration-fast hover:bg-black disabled:opacity-40"
         >
           <span className="flex flex-col items-center gap-2 group-hover:text-paper">
             <span className="material-symbols-outlined text-[32px]">image</span>
@@ -366,10 +366,10 @@ export default function CapturePage() {
             onClick={handleShutter}
             disabled={status === "working"}
             aria-label="拍照"
-            className="group relative flex h-20 w-20 items-center justify-center border-[3px] border-black bg-black shadow-hard transition-all duration-fast hover:scale-95 hover:bg-paper active:translate-x-[4px] active:translate-y-[4px] active:shadow-none disabled:opacity-40"
+            className="group relative flex h-20 w-20 items-center justify-center border-thick border-black bg-black shadow-hard transition-all duration-fast hover:scale-95 hover:bg-paper active:translate-x-[4px] active:translate-y-[4px] active:shadow-none disabled:opacity-40"
           >
             <span
-              className={`h-10 w-10 border-[3px] border-paper transition-colors duration-fast group-hover:border-black group-hover:bg-black ${
+              className={`h-10 w-10 border-thick border-paper transition-colors duration-fast group-hover:border-black group-hover:bg-black ${
                 status === "working" ? "animate-pulse" : ""
               }`}
             />
@@ -379,7 +379,7 @@ export default function CapturePage() {
           type="button"
           onClick={() => setTextSheetOpen(true)}
           disabled={status === "working"}
-          className="group flex items-center justify-center border-l-[3px] border-black transition-colors duration-fast hover:bg-black disabled:opacity-40"
+          className="group flex items-center justify-center border-l-thick border-black transition-colors duration-fast hover:bg-black disabled:opacity-40"
         >
           <span className="flex flex-col items-center gap-2 group-hover:text-paper">
             <span className="material-symbols-outlined text-[32px]">edit_note</span>
@@ -414,13 +414,13 @@ export default function CapturePage() {
                 disabled={status === "working"}
                 onChange={(e) => setTextNote(e.target.value)}
                 placeholder="一杯美式咖啡 / 一根香蕉"
-                className="mt-2 w-full resize-none border-[3px] border-black bg-paper px-4 py-3 font-mono text-data outline-none placeholder:text-ink-faint focus:bg-black focus:text-paper disabled:opacity-40"
+                className="mt-2 w-full resize-none border-thick border-black bg-paper px-4 py-3 font-mono text-data outline-none placeholder:text-ink-faint focus:bg-black focus:text-paper disabled:opacity-40"
               />
               <p className="mt-2 font-mono text-label uppercase text-ink-faint">
                 {textNote.trim().length}/{MAX_NOTE_LEN}
               </p>
               {status === "error" && error && (
-                <p className="mt-3 border-[3px] border-black bg-terracotta px-4 py-3 text-center font-mono text-data uppercase text-paper">
+                <p className="mt-3 border-thick border-black bg-terracotta px-4 py-3 text-center font-mono text-data uppercase text-paper">
                   {error}
                 </p>
               )}

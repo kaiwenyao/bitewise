@@ -185,7 +185,7 @@ export function ResultClient() {
               onRetake={() => router.push("/capture")}
             />
 
-            <ul className="mt-6 border-t-[3px] border-black">
+            <ul className="mt-6 border-t-thick border-black">
               {meal.items.map((item) => (
                 <FoodRow key={item.id} item={item} onEdit={(i) => setEditingId(i.id)} />
               ))}
@@ -196,7 +196,7 @@ export function ResultClient() {
             </div>
 
             {error && (
-              <p className="mt-4 border-[3px] border-black bg-terracotta px-4 py-3 text-center font-mono text-data uppercase text-paper">
+              <p className="mt-4 border-thick border-black bg-terracotta px-4 py-3 text-center font-mono text-data uppercase text-paper">
                 {error}
               </p>
             )}
@@ -251,7 +251,7 @@ export function ResultClient() {
                 默认当前时间,补记可改
               </p>
               {error && (
-                <p className="mt-3 border-[3px] border-black bg-terracotta px-4 py-3 text-center font-mono text-data uppercase text-paper">
+                <p className="mt-3 border-thick border-black bg-terracotta px-4 py-3 text-center font-mono text-data uppercase text-paper">
                   {error}
                 </p>
               )}
@@ -286,7 +286,7 @@ function PhotoBlock({
   onRetake: () => void;
 }) {
   return (
-    <div className="relative aspect-[4/3] overflow-hidden border-[3px] border-black bg-black">
+    <div className="relative aspect-[4/3] overflow-hidden border-thick border-black bg-black">
       {src ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
@@ -300,12 +300,12 @@ function PhotoBlock({
         </div>
       )}
 
-      <span className="absolute left-3 top-3 border-[3px] border-paper bg-black px-3 py-1.5 font-mono text-label uppercase text-paper">
+      <span className="absolute left-3 top-3 border-thick border-paper bg-black px-3 py-1.5 font-mono text-label uppercase text-paper">
         已识别 {count} 项
       </span>
       <button
         onClick={onRetake}
-        className="absolute right-3 top-3 flex h-11 items-center gap-1.5 border-[3px] border-paper bg-black px-4 font-mono text-label uppercase text-paper transition-colors duration-fast hover:bg-paper hover:text-black"
+        className="absolute right-3 top-3 flex h-11 items-center gap-1.5 border-thick border-paper bg-black px-4 font-mono text-label uppercase text-paper transition-colors duration-fast hover:bg-paper hover:text-black"
       >
         <CameraIcon width={18} height={18} />
         {src ? "重拍" : "重记"}
@@ -319,7 +319,7 @@ function PhotoBlock({
 function LoadingState() {
   return (
     <div aria-busy="true" aria-live="polite">
-      <div className="aspect-[4/3] animate-[pulse-soft_1.8s_ease-in-out_infinite] border-[3px] border-black bg-black" />
+      <div className="aspect-[4/3] animate-[pulse-soft_1.8s_ease-in-out_infinite] border-thick border-black bg-black" />
       <div className="mt-6 space-y-4">
         {[0, 1, 2].map((i) => (
           <div key={i} className="flex items-center justify-between">
@@ -343,7 +343,7 @@ function LoadingState() {
 function EmptyState({ onCapture }: { onCapture: () => void }) {
   return (
     <div className="flex flex-col items-center pt-16 text-center">
-      <div className="flex h-16 w-16 items-center justify-center border-[3px] border-black text-ink">
+      <div className="flex h-16 w-16 items-center justify-center border-thick border-black text-ink">
         <PlateIcon width={28} height={28} />
       </div>
       <h2 className="mt-5 font-display text-headline-md uppercase">
@@ -374,7 +374,7 @@ function ErrorState({
 }) {
   return (
     <div className="flex flex-col items-center pt-16 text-center">
-      <div className="flex h-16 w-16 items-center justify-center border-[3px] border-black text-ink">
+      <div className="flex h-16 w-16 items-center justify-center border-thick border-black text-ink">
         <PlateIcon width={28} height={28} />
       </div>
       <h2 className="mt-5 font-display text-headline-md uppercase">

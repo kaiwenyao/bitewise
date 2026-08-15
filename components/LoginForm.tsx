@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { getSupabaseBrowser, usernameToEmail } from "@/lib/supabase-browser";
+import { Button } from "./ui/Button";
 
 interface LoginFormProps {
   registrationEnabled: boolean;
@@ -63,7 +64,7 @@ export default function LoginForm({ registrationEnabled }: LoginFormProps) {
 
   return (
     <div className="flex min-h-dvh flex-col">
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b-[3px] border-black px-6 py-2">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b-thick border-black px-6 pb-2 pt-[calc(0.5rem+env(safe-area-inset-top))]">
         <span className="flex min-w-0 items-center gap-2 font-mono text-label uppercase">
           <span className="h-2 w-2 shrink-0 animate-pulse bg-black" />
           AUTH: {registering ? "REGISTER" : "LOCKED"}
@@ -81,7 +82,7 @@ export default function LoginForm({ registrationEnabled }: LoginFormProps) {
 
         <form
           onSubmit={submit}
-          className="mt-10 border-[3px] border-black bg-paper p-6 shadow-hard"
+          className="mt-10 border-thick border-black bg-paper p-6 shadow-hard"
         >
           <label
             htmlFor="username"
@@ -100,7 +101,7 @@ export default function LoginForm({ registrationEnabled }: LoginFormProps) {
             maxLength={32}
             pattern="[A-Za-z0-9_-]{3,32}"
             title="用户名为 3–32 位字母、数字、下划线或连字符"
-            className="mt-2 h-12 w-full border-[3px] border-black bg-paper px-4 text-body-lg outline-none focus:bg-black focus:text-paper"
+            className="mt-2 h-12 w-full border-thick border-black bg-paper px-4 text-body-lg outline-none focus:bg-black focus:text-paper"
           />
 
           <label
@@ -117,22 +118,18 @@ export default function LoginForm({ registrationEnabled }: LoginFormProps) {
             autoComplete={registering ? "new-password" : "current-password"}
             required
             minLength={6}
-            className="mt-2 h-12 w-full border-[3px] border-black bg-paper px-4 text-body-lg outline-none focus:bg-black focus:text-paper"
+            className="mt-2 h-12 w-full border-thick border-black bg-paper px-4 text-body-lg outline-none focus:bg-black focus:text-paper"
           />
 
           {error && (
-            <p className="mt-4 border-[3px] border-black bg-terracotta px-3 py-2 text-center font-mono text-label uppercase text-paper">
+            <p className="mt-4 border-thick border-black bg-terracotta px-3 py-2 text-center font-mono text-label uppercase text-paper">
               {error}
             </p>
           )}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="mt-6 flex h-14 w-full items-center justify-center border-[3px] border-black bg-black font-mono text-data uppercase text-paper shadow-hard transition-all duration-fast hover:bg-paper hover:text-black active:translate-x-[4px] active:translate-y-[4px] active:shadow-none disabled:opacity-40"
-          >
+          <Button type="submit" disabled={loading} className="mt-6">
             {loading ? (registering ? "创建中…" : "验证中…") : registering ? "创建账号" : "进入系统"}
-          </button>
+          </Button>
 
           {registrationEnabled && (
             <button
