@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin, PHOTO_BUCKET } from "@/lib/supabase";
 import { getSessionUser } from "@/lib/supabase-session";
+import { foodItemRows, parseSaveItems } from "@/lib/parse-save-items";
 
 export const runtime = "nodejs";
 
@@ -59,12 +60,6 @@ export async function GET(
   }
 }
 
-interface SaveItem {
-  name: string;
-  portionGrams: number;
-  kcal: { low: number; mid: number; high: number };
-}
-
 /** PATCH /api/meals/[id] — 修改记录时间或食物明细(仅限本人) */
 export async function PATCH(
   req: Request,
@@ -78,7 +73,7 @@ export async function PATCH(
 
     const body = (await req.json()) as {
       createdAt?: string | null;
-      items?: SaveItem[];
+      items?: unknown;
     };
 
     const supabase = getSupabaseAdmin();
@@ -104,30 +99,39 @@ export async function PATCH(
       if (error) throw new Error(`保存失败:${error.message}`);
     }
 
-    if (Array.isArray(body.items)) {
-      if (body.items.length === 0) {
+    if (body.items !== undefined) {
+      const parsed = parseSaveItems(body.items);
+      if (!parsed.ok) {
+        return NextResponse.json({ error: parsed.error }, { status: 400 });
+      }
+      if (parsed.items.length === 0) {
         return NextResponse.json(
           { error: "至少保留一项食物;想清空请删除整条记录" },
           { status: 400 }
         );
       }
-      // 整体替换:先删后插,position 按新顺序
-      const { error: delError } = await supabase
+
+      // 先插后删:插入失败时旧明细仍在,避免整餐食物被清空
+      const { data: existing, error: existingError } = await supabase
         .from("food_items")
-        .delete()
+        .select("id")
         .eq("meal_id", params.id);
-      if (delError) throw new Error(`保存失败:${delError.message}`);
-      const rows = body.items.map((item, index) => ({
-        meal_id: params.id,
-        name: item.name,
-        portion_grams: Math.round(item.portionGrams),
-        kcal_low: Math.round(item.kcal.low),
-        kcal_mid: Math.round(item.kcal.mid),
-        kcal_high: Math.round(item.kcal.high),
-        position: index,
-      }));
-      const { error: insError } = await supabase.from("food_items").insert(rows);
+      if (existingError) throw new Error(`保存失败:${existingError.message}`);
+      const oldIds = (existing ?? []).map((row) => row.id as string);
+
+      const { error: insError } = await supabase
+        .from("food_items")
+        .insert(foodItemRows(params.id, parsed.items));
       if (insError) throw new Error(`保存失败:${insError.message}`);
+
+      if (oldIds.length > 0) {
+        const { error: delError } = await supabase
+          .from("food_items")
+          .delete()
+          .eq("meal_id", params.id)
+          .in("id", oldIds);
+        if (delError) throw new Error(`保存失败:${delError.message}`);
+      }
     }
 
     return NextResponse.json({ ok: true });
