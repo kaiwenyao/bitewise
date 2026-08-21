@@ -5,6 +5,9 @@ import { foodItemRows, parseSaveItems } from "@/lib/parse-save-items";
 
 export const runtime = "nodejs";
 
+/** 与 /api/recognize 一致,防止超大 base64 撑爆内存/Storage */
+const MAX_BASE64_LEN = 8 * 1024 * 1024;
+
 async function removeUploadedPhoto(photoUrl: string | null) {
   if (!photoUrl) return;
   const marker = `/${PHOTO_BUCKET}/`;
@@ -49,9 +52,17 @@ export async function POST(req: Request) {
 
     let photoUrl: string | null = null;
     if (body.photoBase64) {
+      if (typeof body.photoBase64 !== "string") {
+        return NextResponse.json({ error: "图片格式不合法" }, { status: 400 });
+      }
+      if (body.photoBase64.length > MAX_BASE64_LEN) {
+        return NextResponse.json({ error: "图片过大" }, { status: 413 });
+      }
       photoUrl = await uploadMealPhoto(
         body.photoBase64,
-        body.mimeType ?? "image/jpeg"
+        typeof body.mimeType === "string" && body.mimeType
+          ? body.mimeType
+          : "image/jpeg"
       );
     }
 
