@@ -137,6 +137,7 @@ export function ResultClient() {
   const handleSave = async (): Promise<boolean> => {
     if (!meal || saving || saved) return false;
     setSaving(true);
+    setError("");
     try {
       const whenDate = when ? new Date(when) : null;
       await saveMeal({
