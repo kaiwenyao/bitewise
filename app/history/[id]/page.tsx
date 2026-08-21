@@ -190,31 +190,33 @@ export default function MealDetailPage() {
               </span>
             </div>
 
-            {/* 记录时间:可修改 */}
-            <div className="mt-4">
-              <label
-                htmlFor="meal-time"
-                className="font-mono text-label uppercase text-ink-muted"
-              >
-                记录时间
-              </label>
-              <DateTimeField
-                value={when}
-                onChange={changeWhen}
-                ariaLabel="记录时间"
-              />
-            </div>
-
-            {/* 明细:点行修改,完成即落库 */}
-            <ul className="mt-4 border-t-thick border-black">
-              {items.map((item) => (
-                <FoodRow
-                  key={item.id}
-                  item={item}
-                  onEdit={(i) => setEditingId(i.id)}
+            {/* 记录时间:可修改。保存未完成时禁用,避免并发 PATCH 用过期明细覆盖。 */}
+            <fieldset disabled={saving} className="m-0 min-w-0 border-0 p-0">
+              <div className="mt-4">
+                <label
+                  htmlFor="meal-time"
+                  className="font-mono text-label uppercase text-ink-muted"
+                >
+                  记录时间
+                </label>
+                <DateTimeField
+                  value={when}
+                  onChange={changeWhen}
+                  ariaLabel="记录时间"
                 />
-              ))}
-            </ul>
+              </div>
+
+              {/* 明细:点行修改,完成即落库 */}
+              <ul className="mt-4 border-t-thick border-black">
+                {items.map((item) => (
+                  <FoodRow
+                    key={item.id}
+                    item={item}
+                    onEdit={(i) => setEditingId(i.id)}
+                  />
+                ))}
+              </ul>
+            </fieldset>
 
             <div className="mt-6">
               <TotalCard total={total} animate={false} />
