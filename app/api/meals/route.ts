@@ -1,13 +1,18 @@
 import { NextResponse } from "next/server";
-import { getSupabaseAdmin, uploadMealPhoto } from "@/lib/supabase";
+import { getSupabaseAdmin, PHOTO_BUCKET, uploadMealPhoto } from "@/lib/supabase";
 import { getSessionUser } from "@/lib/supabase-session";
+import { foodItemRows, parseSaveItems } from "@/lib/parse-save-items";
 
 export const runtime = "nodejs";
 
-interface SaveItem {
-  name: string;
-  portionGrams: number;
-  kcal: { low: number; mid: number; high: number };
+async function removeUploadedPhoto(photoUrl: string | null) {
+  if (!photoUrl) return;
+  const marker = `/${PHOTO_BUCKET}/`;
+  const i = photoUrl.indexOf(marker);
+  if (i === -1) return;
+  await getSupabaseAdmin()
+    .storage.from(PHOTO_BUCKET)
+    .remove([photoUrl.slice(i + marker.length)]);
 }
 
 /**
@@ -19,10 +24,14 @@ export async function POST(req: Request) {
     const body = (await req.json()) as {
       photoBase64?: string | null;
       mimeType?: string;
-      items?: SaveItem[];
+      items?: unknown;
       createdAt?: string | null;
     };
-    if (!Array.isArray(body.items) || body.items.length === 0) {
+    const parsed = parseSaveItems(body.items);
+    if (!parsed.ok) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
+    }
+    if (parsed.items.length === 0) {
       return NextResponse.json({ error: "items 不能为空" }, { status: 400 });
     }
 
@@ -56,19 +65,19 @@ export async function POST(req: Request) {
       })
       .select("id")
       .single();
-    if (mealError) throw new Error(`保存失败:${mealError.message}`);
+    if (mealError || !meal) {
+      await removeUploadedPhoto(photoUrl);
+      throw new Error(`保存失败:${mealError?.message ?? "保存失败"}`);
+    }
 
-    const rows = body.items.map((item, index) => ({
-      meal_id: meal.id,
-      name: item.name,
-      portion_grams: Math.round(item.portionGrams),
-      kcal_low: Math.round(item.kcal.low),
-      kcal_mid: Math.round(item.kcal.mid),
-      kcal_high: Math.round(item.kcal.high),
-      position: index,
-    }));
-    const { error: itemsError } = await supabase.from("food_items").insert(rows);
-    if (itemsError) throw new Error(`保存失败:${itemsError.message}`);
+    const { error: itemsError } = await supabase
+      .from("food_items")
+      .insert(foodItemRows(meal.id, parsed.items));
+    if (itemsError) {
+      await supabase.from("meals").delete().eq("id", meal.id).eq("user_id", user.id);
+      await removeUploadedPhoto(photoUrl);
+      throw new Error(`保存失败:${itemsError.message}`);
+    }
 
     return NextResponse.json({ id: meal.id });
   } catch (e) {

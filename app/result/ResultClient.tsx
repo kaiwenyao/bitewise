@@ -128,6 +128,7 @@ export function ResultClient() {
   };
 
   const removeItem = (id: string) => {
+    if (!meal || meal.items.length <= 1) return;
     setSaved(false);
     setEditingId(null);
     setMeal((m) => m && { ...m, items: m.items.filter((i) => i.id !== id) });

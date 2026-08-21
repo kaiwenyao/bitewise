@@ -62,8 +62,12 @@ export default function MealDetailPage() {
   const total = useMemo(() => sumMeal(items), [items]);
   const editing = items.find((i) => i.id === editingId) ?? null;
 
-  /** 立即落库当前明细与时间;完成/移除/改时间时调用 */
-  const persist = async (nextItems: FoodItem[], nextWhen: string) => {
+  /** 立即落库当前明细与时间;完成/移除/改时间时调用。失败则回滚本地状态。 */
+  const persist = async (
+    nextItems: FoodItem[],
+    nextWhen: string,
+    snapshot: { items: FoodItem[]; when: string }
+  ) => {
     if (!meal) return;
     const whenDate = nextWhen ? new Date(nextWhen) : null;
     setSaving(true);
@@ -77,6 +81,8 @@ export default function MealDetailPage() {
         items: nextItems,
       });
     } catch (e) {
+      setItems(snapshot.items);
+      setWhen(snapshot.when);
       setActionError(e instanceof Error ? e.message : "保存失败,请重试");
     } finally {
       setSaving(false);
@@ -84,22 +90,25 @@ export default function MealDetailPage() {
   };
 
   const updateItem = (next: FoodItem) => {
+    const snapshot = { items, when };
     const nextItems = items.map((i) => (i.id === next.id ? next : i));
     setItems(nextItems);
-    void persist(nextItems, when);
+    void persist(nextItems, when, snapshot);
   };
 
   const removeItem = (itemId: string) => {
     if (items.length <= 1) return; // 至少保留一项;清空请用删除记录
     setEditingId(null);
+    const snapshot = { items, when };
     const nextItems = items.filter((i) => i.id !== itemId);
     setItems(nextItems);
-    void persist(nextItems, when);
+    void persist(nextItems, when, snapshot);
   };
 
   const changeWhen = (nextWhen: string) => {
+    const snapshot = { items, when };
     setWhen(nextWhen);
-    void persist(items, nextWhen);
+    void persist(items, nextWhen, snapshot);
   };
 
   const handleDelete = async () => {
